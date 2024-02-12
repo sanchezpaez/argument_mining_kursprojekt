@@ -1,0 +1,18 @@
+essay001.txt	policy	we should attach more importance to cooperation during primary education
+essay008.txt	policy	a government is supposed to offer sufficient financial support for both
+essay001.txt	value	a more cooperative attitudes towards life is more profitable in one's success
+essay001.txt	value	through cooperation, children can learn about interpersonal skills which are significant in the future life of all students
+essay001.txt	common_ground	What we acquired from team work is not only how to achieve the same goal with others but more importantly, how to get along with others
+essay001.txt	common_ground	the significance of competition is that how to become more excellence to gain the victory
+essay001.txt	hypothetical_instance	During the process of cooperation, children can learn about how to listen to opinions of others, how to communicate with others, how to think comprehensively, and even how to compromise with other team members when conflicts occurred
+essay001.txt	hypothetical_instance	All of these skills help them to get on well with other people and will benefit them for the whole life
+essay002.txt	real_example	Take Australia for example, immigrants from varieties of nations have a day called multicultural day where people from each country prepare their food and traditional activities for displaying in the public venues
+essay002.txt	real_example	Many Australians come this day to enjoy the shows, learn about the cultures and admire the diverse values
+essay002.txt	statistics	Fail to create this familiarity makes them felt isolated, in the extreme can lead to social disorder like autism
+essay004.txt	statistics	tourists from different cultures will probably cause changes to the cultural identity of the tourist destinations
+essay005.txt	fact	there are many difficulties a student might face when studying and living overseas
+essay007.txt	fact	newspapers have lost their competitive advantage to sustain their prolonged existence
+essay008.txt	other	this argument is invalid
+essay238.txt	other	And also taking the chance for making friends
+essay024.txt	testimony	Some social surveys have shown that a few children use computer for studying purpose, most of them are attracted by facebook, blog, etc. instead
+essay026.txt	testimony	Whereas some research has apparently demonstrated that prepared food is unable to support enough nutrients we need, especially for children who are growing up
