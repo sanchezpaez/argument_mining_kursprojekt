@@ -5,6 +5,9 @@ from sklearn.preprocessing import MultiLabelBinarizer
 import nltk
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
+from sklearn.multioutput import MultiOutputClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import classification_report
 
 # nltk.download('punkt')
 # nltk.download('stopwords')
@@ -56,3 +59,11 @@ pd.DataFrame(y_dev).to_csv('y_dev.csv', index=False)
 pd.DataFrame(y_test).to_csv('y_test.csv', index=False)
 
 print(X_train_processed)
+
+# Train scikit-learn classifier
+clf_sklearn = MultiOutputClassifier(LogisticRegression(max_iter=1000))
+clf_sklearn.fit(X_train_vectorized, y_train)
+
+# Evaluate on development set
+y_pred_dev_sklearn = clf_sklearn.predict(X_dev_vectorized)
+print("Classification Report (scikit-learn):\n", classification_report(y_dev, y_pred_dev_sklearn, zero_division=1))
