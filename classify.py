@@ -1,13 +1,12 @@
 import pandas as pd
-from sklearn.model_selection import train_test_split
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.preprocessing import MultiLabelBinarizer
-import nltk
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
-from sklearn.multioutput import MultiOutputClassifier
+from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import classification_report
+from sklearn.model_selection import train_test_split
+from sklearn.multioutput import MultiOutputClassifier
+from sklearn.preprocessing import MultiLabelBinarizer
 
 # nltk.download('punkt')
 # nltk.download('stopwords')
@@ -25,10 +24,10 @@ encoded_labels = mlb.fit_transform(labels)
 # print(encoded_labels)
 
 # Split the data into training, development, and test sets
-X_train_dev, X_test, y_train_dev, y_test = train_test_split(corpus_df['Text'], encoded_labels, test_size=0.2, random_state=42, stratify=encoded_labels)
-X_train, X_dev, y_train, y_dev = train_test_split(X_train_dev, y_train_dev, test_size=0.25, random_state=42, stratify=y_train_dev)
-
-# Preprocess the text: tokenize the text and remove stop words
+X_train_dev, X_test, y_train_dev, y_test = train_test_split(corpus_df['Text'], encoded_labels, test_size=0.2,
+                                                            random_state=42, stratify=encoded_labels)
+X_train, X_dev, y_train, y_dev = train_test_split(X_train_dev, y_train_dev, test_size=0.25, random_state=42,
+                                                  stratify=y_train_dev)
 
 
 def preprocess_text(text):
@@ -37,6 +36,7 @@ def preprocess_text(text):
     return ' '.join(tokens)
 
 
+# Preprocess the text: tokenize and remove stop words
 X_train_processed = X_train.apply(preprocess_text)
 X_dev_processed = X_dev.apply(preprocess_text)
 X_test_processed = X_test.apply(preprocess_text)
