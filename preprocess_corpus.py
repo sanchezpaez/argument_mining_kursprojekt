@@ -367,38 +367,36 @@ def get_labelled_sentences_from_data(articles_dataframe, claims_n_premises_dataf
         article_id = article_row['id']
         article_text = article_row['text']
 
-        # print(article_id)
-        # print(article_text)
-        # print('')
-
-        # Initialize a list to store labelled fragments of text for this article
-        labelled_fragments = []
+        # Initialize start and end indices for tracking fragments
+        start_index = 0
+        end_index = 0
 
         # Iterate over claims with the same id
         for _, claim_row in claims_n_premises_dataframe[claims_n_premises_dataframe['id'] == article_id].iterrows():
             claim_text = claim_row['text']
             label = claim_row['label']
-            # print(f"Label '{label}': '{claim_text}'")
 
-            # Check if the claim text is a part of the article text
-            if claim_text in article_text:
-                labelled_fragments.append((claim_text, label))
+            # Find the position of the claim text in the article text
+            fragment_index = article_text.find(claim_text, start_index)
 
-        # Split the article text based on labelled fragments
-        start_index = 0
-        for fragment, label in labelled_fragments:
-            fragment_index = article_text.find(fragment, start_index)
+            # If the claim text is found in the article text
             if fragment_index != -1:
-                labelled_sentences[(article_id, start_index, fragment_index)] = 'non-argumentative'
-                labelled_sentences[(article_id, fragment_index, fragment_index + len(fragment))] = label
-                start_index = fragment_index + len(fragment)
+                # Store the unlabelled fragment before the labelled fragment
+                if start_index < fragment_index:
+                    unlabelled_fragment = article_text[start_index:fragment_index]
+                    labelled_sentences[(article_id, unlabelled_fragment)] = 'non-argumentative'
 
-        # Assign 'non-argumentative' label to the remaining part of the article
-        if start_index < len(article_text):
-            labelled_sentences[(article_id, start_index, len(article_text))] = 'non-argumentative'
+                # Store the labelled fragment
+                labelled_sentences[(article_id, claim_text)] = label
 
-        # print('_________________________________________')
+                # Update indices for the next iteration
+                start_index = fragment_index + len(claim_text)
+                end_index = start_index
 
+        # Store the remaining unlabelled fragment, if any
+        if end_index < len(article_text):
+            unlabelled_fragment = article_text[end_index:]
+            labelled_sentences[(article_id, unlabelled_fragment)] = 'non-argumentative'
 
     return labelled_sentences
 
