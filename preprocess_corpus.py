@@ -1,6 +1,9 @@
 # Sandra Sánchez Páez
 # ArgMin Modulprojekt
 
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import MultiLabelBinarizer
+
 import os
 import pickle
 from pathlib import Path
@@ -457,6 +460,20 @@ def save_data(data: any, filename: any) -> None:
         print(f'Data saved in {filename}')
 
 
+def encode_and_split_data(texts, labels, test_size=0.2, dev_size=0.1, random_state=42):
+    # Encode labels for multilabel classification
+    mlb = MultiLabelBinarizer()
+    encoded_labels = mlb.fit_transform(labels)
+
+    # Split the dataset into training and testing sets
+    X_train, X_test, y_train, y_test = train_test_split(texts, encoded_labels, test_size=test_size, random_state=random_state)
+
+    # Split the training set further into training and development sets
+    X_train, X_dev, y_train, y_dev = train_test_split(X_train, y_train, test_size=dev_size/(1-test_size), random_state=random_state)
+
+    return X_train, X_dev, X_test, y_train, y_dev, y_test, mlb
+
+
 # concatenate_txt_files(CORPUS, ALL_ARTICLES)
 process_annotations(SEMANTIC_TYPES, 'all_sorted_annotated_texts.txt', CORPUS)
 
@@ -470,6 +487,9 @@ texts, labels = get_labelled_sentences_from_data(articles_df, claims_n_premises_
 print(labels)
 print(len(labels))  # 12570
 preprocessed_texts = preprocess_text_fragments(texts, 'preprocessed_texts.pkl')  # The number of preprocessed sentences is 12570.
+
+# Encode and split the data
+X_train, X_dev, X_test, y_train, y_dev, y_test, mlb = encode_and_split_data(preprocessed_texts, labels)
 
 
 
