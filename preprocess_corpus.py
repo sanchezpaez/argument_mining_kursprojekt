@@ -339,10 +339,13 @@ def merge_txt_files(directory):
         for filename in sorted_filenames:
             if filename.endswith(".txt"):
                 with open(os.path.join(directory, filename), "r") as txt_file:
-                    title = filename.split('.')[0]  # Extract title from filename
-                    # print(title)
-                    content = ' '.join(txt_file.read().split())  # Remove consecutive spaces
-                    merged_file.write(f"{title}\t{content}\n")  # Use tab as separator
+                    # Read the content of the file
+                    lines = txt_file.readlines()
+                    title = lines[0].strip()  # Extract title from the first line
+                    rest_of_text = ' '.join(lines[1:]).strip()  # Join the remaining lines as the rest of the text
+
+                    # Write filename, title, and rest of text to the output file, separating them accordingly
+                    merged_file.write(f"{filename}\t{title}. {rest_of_text}\n")  # Use tab as separator
 
     print(f"Merged content written to {output_file}")
 
