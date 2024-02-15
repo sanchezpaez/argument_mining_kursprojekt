@@ -2,14 +2,22 @@
 # ArgMin Modulprojekt
 
 import os
+import pickle
 from pathlib import Path
 import re
+import nltk
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
+from nltk.stem import PorterStemmer
+from nltk.stem import WordNetLemmatizer
+import string
 from tokenize import tokenize
 import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import classification_report
 from sklearn.model_selection import train_test_split
+from tqdm import tqdm
 
 ROOT = Path(__file__).parent.resolve()
 CORPUS = Path(f"{ROOT}/corpus/")
@@ -339,13 +347,10 @@ def merge_txt_files(directory):
         for filename in sorted_filenames:
             if filename.endswith(".txt"):
                 with open(os.path.join(directory, filename), "r") as txt_file:
-                    # Read the content of the file
-                    lines = txt_file.readlines()
-                    title = lines[0].strip()  # Extract title from the first line
-                    rest_of_text = ' '.join(lines[1:]).strip()  # Join the remaining lines as the rest of the text
-
-                    # Write filename, title, and rest of text to the output file, separating them accordingly
-                    merged_file.write(f"{filename}\t{title}. {rest_of_text}\n")  # Use tab as separator
+                    title = filename.split('.')[0]  # Extract title from filename
+                    # print(title)
+                    content = ' '.join(txt_file.read().split())  # Remove consecutive spaces
+                    merged_file.write(f"{title}\t{content}\n")  # Use tab as separator
 
     print(f"Merged content written to {output_file}")
 
@@ -362,8 +367,9 @@ def transform_files_to_dataframes(articles_file, annotations_file):
 
 
 def get_labelled_sentences_from_data(articles_dataframe, claims_n_premises_dataframe):
-    # Create a dictionary to store labelled sentences
-    labelled_sentences = {}
+    # Create empty lists to store texts and labels
+    texts = []
+    labels = []
 
     # Iterate over each article
     for index, article_row in articles_dataframe.iterrows():
@@ -387,10 +393,12 @@ def get_labelled_sentences_from_data(articles_dataframe, claims_n_premises_dataf
                 # Store the unlabelled fragment before the labelled fragment
                 if start_index < fragment_index:
                     unlabelled_fragment = article_text[start_index:fragment_index]
-                    labelled_sentences[(article_id, unlabelled_fragment)] = 'non-argumentative'
+                    texts.append(unlabelled_fragment)
+                    labels.append('non-argumentative')
 
                 # Store the labelled fragment
-                labelled_sentences[(article_id, claim_text)] = label
+                texts.append(claim_text)
+                labels.append(label)
 
                 # Update indices for the next iteration
                 start_index = fragment_index + len(claim_text)
@@ -399,9 +407,54 @@ def get_labelled_sentences_from_data(articles_dataframe, claims_n_premises_dataf
         # Store the remaining unlabelled fragment, if any
         if end_index < len(article_text):
             unlabelled_fragment = article_text[end_index:]
-            labelled_sentences[(article_id, unlabelled_fragment)] = 'non-argumentative'
+            texts.append(unlabelled_fragment)
+            labels.append('non-argumentative')
 
-    return labelled_sentences
+    return texts, labels
+
+
+def preprocess_text(text):
+    # Tokenize the text
+    tokens = word_tokenize(text)
+
+    # Remove punctuation
+    tokens = [word for word in tokens if word not in string.punctuation]
+
+    # Lowercase all words
+    tokens = [word.lower() for word in tokens]
+
+    # Remove stopwords
+    stop_words = set(stopwords.words('english'))
+    tokens = [word for word in tokens if word not in stop_words]
+
+    # WordNet Lemmatizer
+    lemmatizer = WordNetLemmatizer()
+    tokens = [lemmatizer.lemmatize(word) for word in tokens]
+
+    # Join the tokens back into a single string
+    preprocessed_text = ' '.join(tokens)
+
+    return preprocessed_text
+
+
+def preprocess_text_fragments(all_texts, filename):
+    X_preprocessed = []
+    for text in tqdm(all_texts):
+        preprocessed_text = preprocess_text(text)
+        X_preprocessed.append(' '.join(preprocessed_text))
+    print('Saving data...')
+    save_data(X_preprocessed, filename)
+    print(f"The number of preprocessed sentences is {len(X_preprocessed)}.")
+    print(f"The preprocessed sentences have been saved and will be available as {filename}")
+
+    return X_preprocessed
+
+
+def save_data(data: any, filename: any) -> None:
+    """Save data into file_name (.pkl file)to save time."""
+    with open(filename, mode="wb") as file:
+        pickle.dump(data, file)
+        print(f'Data saved in {filename}')
 
 
 # concatenate_txt_files(CORPUS, ALL_ARTICLES)
@@ -412,8 +465,12 @@ articles_df, claims_n_premises_df = transform_files_to_dataframes('merged_output
 # print(articles_df[:10])
 # print(claims_n_premises_df[:10])
 
-labelled_sentences = get_labelled_sentences_from_data(articles_df, claims_n_premises_df)
-print(labelled_sentences)
+texts, labels = get_labelled_sentences_from_data(articles_df, claims_n_premises_df)
+# print(texts)
+print(labels)
+print(len(labels))  # 12570
+preprocessed_texts = preprocess_text_fragments(texts, 'preprocessed_texts.pkl')  # The number of preprocessed sentences is 12570.
+
 
 
 

@@ -13,3 +13,5 @@ X_train_vectorized.csv
 y_dev.csv
 y_test.csv
 y_train.csv
+
+preprocessed_texts.pkl
