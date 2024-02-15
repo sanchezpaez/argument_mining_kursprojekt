@@ -1,18 +1,122 @@
 essay001.txt	policy	we should attach more importance to cooperation during primary education
 essay008.txt	policy	a government is supposed to offer sufficient financial support for both
+essay008.txt	policy	a government should spare effort on young children education as well as universities
+essay008.txt	policy	if countries, especially the developing countries, are determined to take off, one of the key points governments should set on agenda is to educate more qualified future citizens through elementary education
+essay010.txt	policy	governments spend more money on buses, trains, and subways investment
+essay010.txt	policy	governments have to turn people' attention on public vehicles to reduce cars and motorbikes
+essay011.txt	policy	the physical education part should not be outweighed
+essay016.txt	policy	it is indisputable that every new kind food or pill may be noxious, and scientists must do something to insure that the new invention benefits people instead of making people ill or even dying
+essay017.txt	policy	it is a global problem to solve this problem and it is need global contribution to find a solution
+essay018.txt	policy	universities must open choice for everyone to select his subject
+essay018.txt	policy	we must give them opportunity to achieve their goal
+essay018.txt	policy	Universities should accept equal numbers of students of both genders
+essay020.txt	policy	more responsibilities should put on private individuals and companies such as paying to clean up air pollution
+essay020.txt	policy	both companies and private individuals should take the main part to clean up the air pollution
+essay020.txt	policy	governments are responsible to provide a healthy environment for their inhabitants and they should be responsible from cleaning up the air pollution
 essay001.txt	value	a more cooperative attitudes towards life is more profitable in one's success
 essay001.txt	value	through cooperation, children can learn about interpersonal skills which are significant in the future life of all students
+essay001.txt	value	competition makes the society more effective
+essay001.txt	value	without the cooperation, there would be no victory of competition
+essay002.txt	value	they are able to sustain their cultural identities and doing so help they keep their origin values
+essay002.txt	value	sustaining the traditions will make the immigrated people keep their cultural identity and give them confident among the many culture society
+essay002.txt	value	sustaining the cultural values of immigrants is paramount essential
+essay002.txt	value	keeping the cultural traditions in the destination countries is tremendous important
+essay002.txt	value	there are opposing ideas of neglecting one’s cultural values to adapt in the new cultures
+essay003.txt	value	it has contributed to the economic development as well as preserved the culture and environment of the tourist destinations
+essay003.txt	value	international tourism has both triggered economic development and maintained cultural and environment values of the tourist countries
+essay003.txt	value	tourism has clearly improved lives in the tourist country
+essay003.txt	value	tourism has survived many non-tangible cultural values and beauty scenes
+essay004.txt	value	this industry has affected the cultural attributes and damaged the natural environment of the tourist destinations
+essay004.txt	value	the tourism has created threatening pressure on both the sociocultural and natural environments
 essay001.txt	common_ground	What we acquired from team work is not only how to achieve the same goal with others but more importantly, how to get along with others
 essay001.txt	common_ground	the significance of competition is that how to become more excellence to gain the victory
+essay001.txt	common_ground	when we consider about the question that how to win the game, we always find that we need the cooperation
+essay002.txt	common_ground	maintaining one’s cultural identity is a key important rule to help individuals emerge in the new multicultural environments
+essay002.txt	common_ground	These feedbacks, in turn, help raise one’s pride of their cultures and help people understand each other more
+essay002.txt	common_ground	it is crucial to keep one’s identity
+essay002.txt	common_ground	they need a connection back to their country as well as teach their children their value of origin
+essay003.txt	common_ground	international tourism promotes many aspects of the destination country’s economy in order to serve various demands of tourists
+essay003.txt	common_ground	through tourism industry, many cultural values have been preserved and natural environments have been protected
+essay005.txt	common_ground	employers are mostly looking for people who have international and language skills
+essay006.txt	common_ground	Living in a new country requires a great amount of flexibility and adaptability in one's character
+essay006.txt	common_ground	they should be able to deal with the obstacles that they may encounter
+essay006.txt	common_ground	Overcoming problems teaches the students how to be more mature and self-independence
+essay006.txt	common_ground	Learning about others' cultures is so important
+essay006.txt	common_ground	It contributes in building a new understanding in us of how we see the world
 essay001.txt	hypothetical_instance	During the process of cooperation, children can learn about how to listen to opinions of others, how to communicate with others, how to think comprehensively, and even how to compromise with other team members when conflicts occurred
 essay001.txt	hypothetical_instance	All of these skills help them to get on well with other people and will benefit them for the whole life
+essay001.txt	hypothetical_instance	Take Olympic games which is a form of competition for instance, it is hard to imagine how an athlete could win the game without the training of his or her coach, and the help of other professional staffs such as the people who take care of his diet, and those who are in charge of the medical care
+essay002.txt	hypothetical_instance	children immigrated to a new country will face social troubles in school with new friends
+essay002.txt	hypothetical_instance	In this new environment, parent should find friends coming from their same country so that they can socialize in a very familiar manner as feeling being home
+essay003.txt	hypothetical_instance	These demands trigger related business in the surrounding settings which in turn create many jobs for local people improve infrastructure and living standard
+essay003.txt	hypothetical_instance	Without this support and profit from tourism, many traditional cultures would disappear due to its low income works
+essay005.txt	hypothetical_instance	Compared to the peers studying in the home country, it will be more likely for the one who is living overseas to be successful in adapting himself/herself into new environments and situations in life
+essay005.txt	hypothetical_instance	One who is living overseas will of course struggle with loneliness, living away from family and friends
+essay005.txt	hypothetical_instance	those difficulties will turn into valuable experiences in the following steps of life
+essay005.txt	hypothetical_instance	the one will learn living without depending on anyone else
+essay005.txt	hypothetical_instance	Becoming successful in this study will give the student an edge in job market
+essay006.txt	hypothetical_instance	students might face many challenges in the host country
+essay006.txt	hypothetical_instance	they will get exposed to a different educational system
+essay006.txt	hypothetical_instance	They will meet new professors and new classmates which makes the academic experience different from that in their home country
 essay002.txt	real_example	Take Australia for example, immigrants from varieties of nations have a day called multicultural day where people from each country prepare their food and traditional activities for displaying in the public venues
 essay002.txt	real_example	Many Australians come this day to enjoy the shows, learn about the cultures and admire the diverse values
+essay003.txt	real_example	Take Cambodia for example, a large number of visitors coming to visit the Angkowat ancient temple need services like restaurants, hotels, souvenir shops and other stores
+essay003.txt	real_example	in Vietnam, many cultural costumes and natural scenes, namely ‘Trong Dong’ drum performance and ‘Ha Long’ bay, are being encouraged to preserve and funded by the tourism ministry
+essay004.txt	real_example	Take Thailand for example, in the Vietnam War, many American soldiers came to Thailand for a break and involved in sexual and drug activities, these huge demands caused many local businesses opened and expanded, even illegally involved in under-age prostitutes to maximize their profits
+essay004.txt	real_example	This was due to the lack of adequate controls by authorities and lead to a bad image of Thailand tourism
+essay004.txt	real_example	many marine lives have been endangered, in the extremes part of the reef become uninhabitable for these marine species
+essay007.txt	real_example	Contrary to the past when people had to wait long hours to take a daily newspaper, nowadays, they can acquire latest news updated every second through their mobile phones or computers connected to the internet, everywhere and at anytime
+essay007.txt	real_example	the internet service is being provided at a low cost or even free in many countries
+essay012.txt	real_example	Many years ago, peoples had to pay a great deal of money to post their letters, and their payements were related to the weight of their letters or boxes, and many accidents may cause problem that the post could not be delivered
+essay012.txt	real_example	nowadays, all people can take advantage of internet to have their own email free, and send their emails to everyone in no time, besides they can be sure if their emails have been delivered or not
+essay012.txt	real_example	Today, students can apply for foreign universities much easier than before
+essay012.txt	real_example	Not only with the help of sending email, but also using credit cards to pay all necessary fees online
+essay012.txt	real_example	But now, biomedical engineers can make artificial heart valves which works well and doctors can implant them easily
+essay012.txt	real_example	In the past time doctors used pig heart's valve to implant, but the patient could not be alive more than 3 years after the replacement
 essay002.txt	statistics	Fail to create this familiarity makes them felt isolated, in the extreme can lead to social disorder like autism
 essay004.txt	statistics	tourists from different cultures will probably cause changes to the cultural identity of the tourist destinations
+essay004.txt	statistics	tourism increasingly create harms to the natural habitats of the destination appeals
+essay004.txt	statistics	As the Australia’s Great Barrier Reef has shown, the billion visitors per annum has generated immense destruction to this nature wonder, namely breaking the corals caused by walking or throwing boat’s anchors, dropping fuel and other sorts of pollutions
+essay007.txt	statistics	when taking environment into consideration, people must conceive that the more newspapers are published, the more trees are cut down
+essay008.txt	statistics	a lack of well-established primary education goes hand in hand with a high rate of illiteracy, and this interplay seriously compromises a country's future development
+essay008.txt	statistics	The high technology and new ideas applied into practice may not only lead a country to flourish but also elevate its status in the international community
+essay010.txt	statistics	if there are more good buses, trains, or subways, people are inclined to use less private vehicles, which decreases the amount of carbon released
+essay010.txt	statistics	the more cars and motorbikes are on roads, the more seriously the ozone layer is damaged
+essay010.txt	statistics	If governments use more money to improve roads, there is a strong likelihood that more people drive their private cars work
+essay011.txt	statistics	There is a direct linkage between people's health and the frequency of doing physical exercises
+essay011.txt	statistics	The more we practice, the better we feel
+essay011.txt	statistics	the better a person feels, the better his brain works
+essay013.txt	statistics	with the development of technology, increasingly more young people become obsessed with high-tech products
+essay016.txt	statistics	The animal experiments accelerate the vanishing of some categories of animals
 essay005.txt	fact	there are many difficulties a student might face when studying and living overseas
 essay007.txt	fact	newspapers have lost their competitive advantage to sustain their prolonged existence
+essay007.txt	fact	the number of people reading newspapers may continue falling sharply, possibly leading to the close-downs of many in the coming time
+essay007.txt	fact	newspapers' production will have to face environmentalists on its way to be alive
+essay011.txt	fact	the more attention is withdrawn to a problem of physical education, the more influence we can get on academic success of students
+essay011.txt	fact	if the entire nation, from their school ages begin going for sports and try doing that everyday, eventually it may help to build healthy nation
+essay011.txt	fact	financial sustainability of a region mostly depends on how healthy the population is
+essay011.txt	fact	putting physical activities in early steps of human development would finally lead to mentally healthy society
+essay012.txt	fact	You can see its effects on transportation, communication, medicine and so forth
+essay013.txt	fact	They kept researching new technology and became successful at a very young age
+essay014.txt	fact	teachers teach us knowledge but also the skills to tell right from wrong
+essay015.txt	fact	they may be factors decreasing the position of written language
+essay017.txt	fact	most of people do not have a plan for make a limitation or schedule for watching television
+essay018.txt	fact	universities follow the requirement of job providers and decide subject suitable for particular gender
+essay021.txt	fact	high sales are obviously a reflection of the powerful advertisements
 essay008.txt	other	this argument is invalid
 essay238.txt	other	And also taking the chance for making friends
 essay024.txt	testimony	Some social surveys have shown that a few children use computer for studying purpose, most of them are attracted by facebook, blog, etc. instead
 essay026.txt	testimony	Whereas some research has apparently demonstrated that prepared food is unable to support enough nutrients we need, especially for children who are growing up
+essay054.txt	testimony	in accordance with recent research, experts suggest the lifestyle of individuals in modern society is unhealthy
+essay057.txt	testimony	Frank Zappa once said, "Mind is like a parachute, it doesn't work if its not open“
+essay093.txt	testimony	Compassion, a virtue preached in almost all religions from Buddhism to Mohammedanism, is what distinguishes us human beings from animals
+essay114.txt	testimony	As a recent interview with Josh Trumm – the founder of the 'Teachers Global Group'- reveals, human interactions will never be imitated by computers: 'This verbal and non-verbal communication between teachers and children is the first step towards a proper education
+essay114.txt	testimony	Without someone who can explain and understand their problems, pupils cannot actually learn'
+essay185.txt	testimony	utility companies claim that renewable energy is environmentally friendly
+essay185.txt	testimony	Latest studies have shown that these renewable resources of energy are problematic as well and they are very likely to pose long-term environmental hazards
+essay195.txt	testimony	we have to be in parallel with the advanced countries which have focused in business field
+essay198.txt	testimony	According to National Safety Council, riding the bus is over 170 times safer than private care
+essay200.txt	testimony	Researchers indicated that most of natural resources are un-recyclable and only several decades after, the Earth's natural resources are totally exhausted
+essay201.txt	testimony	According to a statistic conducted by the International Animal Preserving Association, we have only ten percent of the animals that have ever existed, which means that the biodiversity of our home is grievously endangered
+essay226.txt	testimony	Edison's statement "Genius is 1 percent inspiration and 99 percent perspiration" is still helpful for everyone today, and probably in the future
+essay231.txt	testimony	He said that he had to study a lot to pass the test to enter the university

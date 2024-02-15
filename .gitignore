@@ -4,3 +4,12 @@
 .DS_Store
 
 .stats_cache
+
+__pycache__/
+
+X_dev_vectorized.csv
+X_test_vectorized.csv
+X_train_vectorized.csv
+y_dev.csv
+y_test.csv
+y_train.csv
