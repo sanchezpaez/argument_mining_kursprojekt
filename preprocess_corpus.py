@@ -3,7 +3,8 @@
 
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MultiLabelBinarizer
-
+from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
+import numpy as np
 import os
 import pickle
 from pathlib import Path
@@ -21,6 +22,8 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import classification_report
 from sklearn.model_selection import train_test_split
 from tqdm import tqdm
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score
 
 ROOT = Path(__file__).parent.resolve()
 CORPUS = Path(f"{ROOT}/corpus/")
@@ -121,99 +124,6 @@ def process_annotations(tsv_file, output_file, directory):
             output.write(f"{filename}\t{annotation_type}\t{text_span}\n")
 
 
-def label_non_argumentative(all_annotations_file, all_text_file, output_file):
-    # Read all annotations into a dictionary
-    annotations = {}
-    with open(all_annotations_file, 'r') as ann_file:
-        for line in ann_file:
-            parts = line.strip().split('\t')
-            filename = parts[0]
-            label = parts[1]
-            if filename not in annotations:
-                annotations[filename] = {}
-            start_index, end_index = map(int, parts[2].split(':'))
-            annotations[filename][(start_index, end_index)] = label
-
-    # Open the all_text_file and read paragraphs
-    with open(all_text_file, 'r') as text_file, open(output_file, 'w') as output:
-        current_article = None
-        current_paragraph = ""
-        for line in text_file:
-            line = line.strip()
-            if line.startswith("essay"):
-                if current_article:
-                    # Process the current paragraph
-                    labels = annotations.get(current_article, {})
-                    labeled = False
-                    for start_end, label in labels.items():
-                        if current_paragraph.find(line) != -1:
-                            output.write(f"{current_article}\t{label}\t{current_paragraph}\n")
-                            labeled = True
-                            break
-                    if not labeled:
-                        output.write(f"{current_article}\tnon-argumentative\t{current_paragraph}\n")
-                current_article = line
-                current_paragraph = ""
-            else:
-                current_paragraph += line + " "
-
-
-def group_text_spans_by_article(corpus_file, annotations_file):
-    # Read the corpus file
-    with open(corpus_file, 'r') as f:
-        corpus_content = f.read()
-    # Read annotations into a DataFrame
-    annotations_df = pd.read_csv(annotations_file, sep='\t', header=None, names=['File', 'Label', 'Text'])
-
-    # Create a dictionary to store text spans by article
-    articles_text_spans = {}
-    for _, row in annotations_df.iterrows():
-        article_id = row['File'].split('.')[0]  # Extract article ID from the filename
-        if article_id not in articles_text_spans:
-            articles_text_spans[article_id] = []
-        articles_text_spans[article_id].append(row['Text'])
-
-    # Concatenate text spans for each article
-    articles_concatenated_text = {}
-    for article_id, text_spans in articles_text_spans.items():
-        articles_concatenated_text[article_id] = '\n'.join(text_spans)
-
-    return articles_concatenated_text
-
-
-def label_text_spans_with_annotations(articles_file, annotations_file):
-    # Read all articles from the corpus file
-    with open(articles_file, 'r') as f:
-        articles_content = f.read()
-
-    # Read annotations into a DataFrame, skipping the header row
-    annotations_df = pd.read_csv(annotations_file, sep='\t', header=None, names=['File', 'Label', 'Text'])
-
-    text_and_labels = []
-
-    # Iterate through each article
-    for article in articles_content.split('Article '):
-        if article.strip():  # Skip empty articles (if any)
-            article_lines = article.split('\n')
-            article_name = article_lines[0].strip()  # Extract article name
-            article_text = '\n'.join(article_lines[1:]).strip()  # Extract article text
-
-            # Check if any annotations exist for this article
-            annotations_for_article = annotations_df[annotations_df['File'] == article_name]
-
-            if not annotations_for_article.empty:
-                # Annotations found for this article
-                for _, row in annotations_for_article.iterrows():
-                    text_span = row['Text']
-                    label = row['Label']
-                    text_and_labels.append(f"{text_span}\t{label}")
-            else:
-                # No annotations found, label the entire article as 'non-argumentative'
-                text_and_labels.append(f"{article_text}\tnon-argumentative")
-
-    return text_and_labels
-
-
 def process_article(article_text, annotations):
     processed_paragraphs = []
     for paragraph in article_text.split('\n'):
@@ -240,33 +150,6 @@ def read_annotations(annotations_file):
     return annotations
 
 
-def label_articles(all_articles_file, all_annotations_file):
-    articles = {}
-    with open(all_articles_file, 'r') as file:
-        current_article = None
-        current_text = ""
-        for line in file:
-            line = line.strip()
-            if line.startswith("Article"):
-                if current_article:
-                    articles[current_article] = current_text.strip()
-                current_article = line
-                current_text = ""
-            else:
-                current_text += line + "\n"
-        if current_article:
-            articles[current_article] = current_text.strip()
-
-    annotations = read_annotations(all_annotations_file)
-
-    labeled_articles = {}
-    for article, text in articles.items():
-        labeled_paragraphs = process_article(text, annotations.get(article, {}))
-        labeled_articles[article] = labeled_paragraphs
-
-    return labeled_articles
-
-
 def read_annotations(annotations_file):
     annotations = {}
     with open(annotations_file, 'r') as file:
@@ -276,68 +159,6 @@ def read_annotations(annotations_file):
             label = parts[1]
             annotations[(filename, label)] = parts[2]
     return annotations
-
-
-def label_articles(all_articles_file, all_annotations_file):
-    articles = {}
-    with open(all_articles_file, 'r') as file:
-        current_article = None
-        current_text = ""
-        for line in file:
-            line = line.strip()
-            if line.startswith("Article"):
-                if current_article:
-                    annotations = read_annotations(all_annotations_file)
-                    processed_text = process_article(current_text, annotations.get(current_article, {}))
-                    articles[current_article] = processed_text
-                current_article = line
-                current_text = ""
-            else:
-                current_text += " " + line
-        if current_article:
-            annotations = read_annotations(all_annotations_file)
-            processed_text = process_article(current_text, annotations.get(current_article, {}))
-            articles[current_article] = processed_text
-    return articles
-
-
-def process_article(article_text, annotations):
-    processed_text = []
-    current_paragraph = ""
-    current_label = None
-    for line in article_text.split('\n'):
-        if line.strip() == "":
-            if current_paragraph.strip() != "":
-                if current_label:
-                    processed_text.append((current_paragraph.strip(), current_label))
-                else:
-                    processed_text.append((current_paragraph.strip(), 'non_argumentative'))
-                current_paragraph = ""
-                current_label = None
-        else:
-            label = None
-            for start_end, label_value in annotations.items():
-                start, end = start_end
-                if re.search(r'\b{}\b'.format(label_value), line, re.IGNORECASE):
-                    label = label_value
-                    break
-            if label:
-                if current_paragraph.strip() != "":
-                    if current_label:
-                        processed_text.append((current_paragraph.strip(), current_label))
-                    else:
-                        processed_text.append((current_paragraph.strip(), 'non_argumentative'))
-                    current_paragraph = ""
-                current_label = label
-                processed_text.append((line.strip(), current_label))
-            else:
-                current_paragraph += " " + line.strip()
-    if current_paragraph.strip() != "":
-        if current_label:
-            processed_text.append((current_paragraph.strip(), current_label))
-        else:
-            processed_text.append((current_paragraph.strip(), 'non_argumentative'))
-    return processed_text
 
 
 def merge_txt_files(directory):
@@ -444,10 +265,13 @@ def preprocess_text_fragments(all_texts, filename):
     X_preprocessed = []
     for text in tqdm(all_texts):
         preprocessed_text = preprocess_text(text)
-        X_preprocessed.append(' '.join(preprocessed_text))
+        # print(text)
+        # print(preprocessed_text)
+        X_preprocessed.append(preprocessed_text)
+    #     X_preprocessed.append(' '.join(preprocessed_text))
     print('Saving data...')
     save_data(X_preprocessed, filename)
-    print(f"The number of preprocessed sentences is {len(X_preprocessed)}.")
+    print(f"The number of preprocessed texts is {len(X_preprocessed)}.")
     print(f"The preprocessed sentences have been saved and will be available as {filename}")
 
     return X_preprocessed
@@ -474,6 +298,38 @@ def encode_and_split_data(texts, labels, test_size=0.2, dev_size=0.1, random_sta
     return X_train, X_dev, X_test, y_train, y_dev, y_test, mlb
 
 
+def create_term_document_matrix(X_train, y_train, X_dev, y_dev, additional_features=None):
+    # Initialize a CountVectorizer or TfidfVectorizer
+    vectorizer = TfidfVectorizer()  # You can change to CountVectorizer if you want simple word counts
+
+    # Fit the vectorizer to the data and transform the data
+    term_doc_matrix = vectorizer.fit_transform(X_train)
+    print(term_doc_matrix)
+    y_train = np.array(y_train)
+    X_dev = vectorizer.transform(X_dev)
+    print(X_dev.shape)
+    y_dev = np.array(y_dev)
+
+    # Check vectorization parameters
+    print("Vectorization Parameters:")
+    print("Vectorizer Parameters:", vectorizer.get_params())
+
+    # Check vocabulary size
+    print("\nVocabulary Size:", len(vectorizer.vocabulary_))
+
+    # Extract additional features if provided
+    if additional_features:
+        # Convert additional features to numpy array
+        additional_features_array = np.array(additional_features)
+        print("\nAdditional Features Shape:", additional_features_array.shape)
+
+        # Concatenate additional features with the term-document matrix
+        term_doc_matrix = np.hstack((term_doc_matrix.toarray(), additional_features_array))
+
+    print('Matrix with all features fitted')
+    return term_doc_matrix, y_train, X_dev, y_dev
+
+
 # concatenate_txt_files(CORPUS, ALL_ARTICLES)
 process_annotations(SEMANTIC_TYPES, 'all_sorted_annotated_texts.txt', CORPUS)
 
@@ -484,12 +340,36 @@ articles_df, claims_n_premises_df = transform_files_to_dataframes('merged_output
 
 texts, labels = get_labelled_sentences_from_data(articles_df, claims_n_premises_df)
 # print(texts)
-print(labels)
-print(len(labels))  # 12570
+# print(labels)
+# print(len(labels))  # 12570
 preprocessed_texts = preprocess_text_fragments(texts, 'preprocessed_texts.pkl')  # The number of preprocessed sentences is 12570.
+print(preprocessed_texts)
 
 # Encode and split the data
 X_train, X_dev, X_test, y_train, y_dev, y_test, mlb = encode_and_split_data(preprocessed_texts, labels)
+print(len(X_train))
+print(len(y_train))
+print(len(X_dev))
+print(len(y_dev))
+
+# Assuming X_train, X_dev, and X_test are your text data, and additional_features_train,
+# additional_features_dev, and additional_features_test are additional features relevant
+# for claims and premises
+# You need to replace them with your actual data
+X_train_term_doc_matrix, y_train, X_dev, y_dev = create_term_document_matrix(X_train, y_train, X_dev, y_dev)
+# X_train_term_doc_matrix = create_term_document_matrix(X_train, additional_features=additional_features_train)
+
+# Initialize the RandomForestClassifier
+classifier = RandomForestClassifier()
+# Train the classifier
+classifier.fit(X_train_term_doc_matrix, y_train)
+# Predict on the development set
+y_dev_pred = classifier.predict(X_dev)
+# Evaluate the classifier
+accuracy = accuracy_score(y_dev, y_dev_pred)
+print("Development Set Accuracy:", accuracy)
+
+
 
 
 
