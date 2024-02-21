@@ -1,8 +1,13 @@
 # Sandra Sánchez Páez
 # ArgMin Modulprojekt
+from time import sleep
 
+import torch
+from transformers import RobertaTokenizer, RobertaForSequenceClassification
+from transformers import Trainer, TrainingArguments
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import MultiLabelBinarizer
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import MultiLabelBinarizer, LabelEncoder
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 import numpy as np
 import os
@@ -24,6 +29,7 @@ from sklearn.model_selection import train_test_split
 from tqdm import tqdm
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score
+from transformers import RobertaForSequenceClassification
 
 ROOT = Path(__file__).parent.resolve()
 CORPUS = Path(f"{ROOT}/corpus/")
@@ -284,6 +290,14 @@ def save_data(data: any, filename: any) -> None:
         print(f'Data saved in {filename}')
 
 
+def load_data(filename: any) -> any:
+    """Load pre-saved data."""
+    with open(filename, "rb") as file:
+        output = pickle.load(file)
+    print(f'Loading  data  pre-saved as {filename}...')
+    return output
+
+
 def encode_and_split_data(texts, labels, test_size=0.2, dev_size=0.1, random_state=42):
     # Encode labels for multilabel classification
     mlb = MultiLabelBinarizer()
@@ -304,7 +318,7 @@ def create_term_document_matrix(X_train, y_train, X_dev, y_dev, additional_featu
 
     # Fit the vectorizer to the data and transform the data
     term_doc_matrix = vectorizer.fit_transform(X_train)
-    print(term_doc_matrix)
+    # print(term_doc_matrix)
     y_train = np.array(y_train)
     X_dev = vectorizer.transform(X_dev)
     print(X_dev.shape)
@@ -339,11 +353,16 @@ articles_df, claims_n_premises_df = transform_files_to_dataframes('merged_output
 # print(claims_n_premises_df[:10])
 
 texts, labels = get_labelled_sentences_from_data(articles_df, claims_n_premises_df)
+# Get unique labels
+unique_labels = set(labels)
+num_classes = len(unique_labels)
+print(f"The number of classes is {num_classes}")
 # print(texts)
 # print(labels)
 # print(len(labels))  # 12570
-preprocessed_texts = preprocess_text_fragments(texts, 'preprocessed_texts.pkl')  # The number of preprocessed sentences is 12570.
-print(preprocessed_texts)
+# preprocessed_texts = preprocess_text_fragments(texts, 'preprocessed_texts.pkl')  # The number of preprocessed sentences is 12570.
+# print(preprocessed_texts)
+preprocessed_texts = load_data('preprocessed_texts.pkl')
 
 # Encode and split the data
 X_train, X_dev, X_test, y_train, y_dev, y_test, mlb = encode_and_split_data(preprocessed_texts, labels)
@@ -359,15 +378,156 @@ print(len(y_dev))
 X_train_term_doc_matrix, y_train, X_dev, y_dev = create_term_document_matrix(X_train, y_train, X_dev, y_dev)
 # X_train_term_doc_matrix = create_term_document_matrix(X_train, additional_features=additional_features_train)
 
+# save_data(X_train_term_doc_matrix, 'ov_X_train.pkl')
+# save_data(X_dev, 'ov_X_dev.pkl')
+# save_data(y_train, 'ov_y_train.pkl')
+# save_data(y_dev, 'ov_y_dev.pkl')
+
+load_data('ov_X_train.pkl')
+load_data('ov_X_dev.pkl')
+load_data('ov_y_train.pkl')
+load_data('ov_y_dev.pkl')
+
 # Initialize the RandomForestClassifier
 classifier = RandomForestClassifier()
+sleep(3)
 # Train the classifier
 classifier.fit(X_train_term_doc_matrix, y_train)
+sleep(3)
 # Predict on the development set
 y_dev_pred = classifier.predict(X_dev)
+sleep(3)
 # Evaluate the classifier
 accuracy = accuracy_score(y_dev, y_dev_pred)
-print("Development Set Accuracy:", accuracy)
+print("Development Set Accuracy:", accuracy)  # 0.4789180588703262
+
+# TRANSFORMERS
+# Step 1: Prepare Data
+# Assuming you have your dataset loaded into X (text data) and y (semantic types)
+
+# Encode labels into numerical format
+label_encoder = LabelEncoder()
+encoded_labels = label_encoder.fit_transform(labels)
+
+# Split data into training, validation, and test sets
+train_texts, test_texts, train_labels, test_labels = train_test_split(texts, encoded_labels, test_size=0.2, random_state=42)
+train_texts, val_texts, train_labels, val_labels = train_test_split(train_texts, train_labels, test_size=0.2, random_state=42)
+
+# Tokenize the texts (you can replace this with your own tokenizer if needed)
+tokenizer = RobertaTokenizer.from_pretrained("roberta-base")
+train_encodings = tokenizer(train_texts, truncation=True, padding=True)
+val_encodings = tokenizer(val_texts, truncation=True, padding=True)
+test_encodings = tokenizer(test_texts, truncation=True, padding=True)
+
+# Convert labels to tensors
+train_labels_tensor = torch.tensor(train_labels)
+val_labels_tensor = torch.tensor(val_labels)
+test_labels_tensor = torch.tensor(test_labels)
+
+# Define the datasets
+train_dataset = torch.utils.data.TensorDataset(
+    torch.tensor(train_encodings["input_ids"]),
+    torch.tensor(train_encodings["attention_mask"]),
+    train_labels_tensor
+)
+val_dataset = torch.utils.data.TensorDataset(
+    torch.tensor(val_encodings["input_ids"]),
+    torch.tensor(val_encodings["attention_mask"]),
+    val_labels_tensor
+)
+test_dataset = torch.utils.data.TensorDataset(
+    torch.tensor(test_encodings["input_ids"]),
+    torch.tensor(test_encodings["attention_mask"]),
+    test_labels_tensor
+)
+
+
+# Step 2: Tokenization
+# tokenizer = RobertaTokenizer.from_pretrained("roberta-base")
+# print('...Downloaded Robertatokenizer')
+
+# # Tokenize text data
+# tokenized_data = tokenizer(texts, padding=True, truncation=True, return_tensors="pt")
+# print('...Tokenized data')
+# print('Saving data...')
+# save_data(tokenized_data, 'tokenized_data.pkl')
+# print(f"The preprocessed data has been saved and will be available as 'tokenized_data.pkl'")
+
+# tokenized_data = load_data('tokenized_data.pkl')
+# sleep(2)
+#
+# # Use MultiLabelBinarizer to convert multilabel strings to binary encoded labels
+# label_binarizer = MultiLabelBinarizer()
+# binary_labels = label_binarizer.fit_transform(labels)
+#
+# # Split data into train and validation sets
+# train_inputs, val_inputs, train_labels, val_labels = train_test_split(
+#     tokenized_data, binary_labels, test_size=0.2
+# ) #todo: should take preprocessed with roberta tokenizer but needs to be reformatted
+# print('Did train-test split')
+# sleep(3)
+#
+# # Convert labels to tensors
+# train_labels_tensor = torch.tensor(train_labels)
+# val_labels_tensor = torch.tensor(val_labels)
+
+# # Define the datasets
+# train_dataset = torch.utils.data.TensorDataset(
+#     train_inputs["input_ids"], train_inputs["attention_mask"], train_labels_tensor
+# )
+# val_dataset = torch.utils.data.TensorDataset(
+#     val_inputs["input_ids"], val_inputs["attention_mask"], val_labels_tensor
+# )
+#
+# # Make sure they contain the required input fields: input_ids, attention_mask, token_type_ids, labels
+# # Print a sample to verify the structure
+# print("Training Dataset Samples:")
+# for sample in train_inputs[:5]:
+#     print(sample)
+#
+# print("\nTraining  Labels Samples:")
+# for label in binary_labels[:5]:
+#     print(label)
+
+# Step 3: Model Architecture
+# model = RobertaForSequenceClassification.from_pretrained("roberta-base", num_labels=num_classes)
+# print('...Loaded Roberta model')
+# # Save the model to disk
+# model.save_pretrained("roberta_sequence_classification_model")
+
+# Load the model from the saved directory
+model = RobertaForSequenceClassification.from_pretrained("roberta_sequence_classification_model")
+print('...Loaded Roberta model')
+sleep(2)
+# Step 4: Training
+training_args = TrainingArguments(
+    output_dir="./results",
+    num_train_epochs=3,
+    per_device_train_batch_size=8,
+    per_device_eval_batch_size=8,
+    warmup_steps=500,
+    weight_decay=0.01,
+    logging_dir="./logs",
+)
+
+trainer = Trainer(
+    model=model,
+    args=training_args,
+    train_dataset=train_dataset,
+    eval_dataset=val_dataset,
+)
+sleep(1)
+trainer.train()
+print('...Trained Roberta model')
+sleep(2)
+
+# Step 5: Evaluation (optional)
+eval_results = trainer.evaluate(eval_dataset=val_dataset)
+print('...Evaluated Roberta model')
+
+# Step 6: Fine-Tuning (optional)
+# Adjust hyperparameters and repeat steps 4 and 5 to fine-tune the model further
+
 
 
 
