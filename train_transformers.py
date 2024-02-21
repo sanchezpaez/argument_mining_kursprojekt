@@ -1,9 +1,10 @@
 import numpy as np
-from transformers import RobertaForSequenceClassification, Trainer, TrainingArguments
-from sklearn.model_selection import train_test_split
-from transformers import RobertaTokenizer
 import torch
 from sklearn.metrics import accuracy_score, classification_report
+from sklearn.model_selection import train_test_split
+from transformers import RobertaForSequenceClassification, Trainer, TrainingArguments
+from transformers import RobertaTokenizer
+
 
 class CustomDataCollator(torch.utils.data.DataLoader):
     def __init__(self, tokenizer):
@@ -21,14 +22,16 @@ class CustomDataCollator(torch.utils.data.DataLoader):
             batch['labels'] = torch.tensor([f.label for f in features], dtype=torch.long)
         return batch
 
+
 class InputFeatures:
     def __init__(self, input_ids, attention_mask, label):
         self.input_ids = input_ids
         self.attention_mask = attention_mask
         self.label = label
 
+
 def prepare_datasets(texts, labels, test_size=0.2, random_state=42):
-    label_map = {"positive": 0, "negative": 1, "neutral": 2, "mixed": 3}
+    label_map = {label: i for i, label in enumerate(labels)}
     labels_numeric = [label_map[label] for label in labels]
 
     tokenizer = RobertaTokenizer.from_pretrained("roberta-base")
@@ -56,6 +59,7 @@ def prepare_datasets(texts, labels, test_size=0.2, random_state=42):
 
     return train_dataset, val_dataset, tokenizer, label_map
 
+
 def train_model(model, train_dataset, val_dataset, training_args):
     data_collator = CustomDataCollator(tokenizer)
 
@@ -71,6 +75,7 @@ def train_model(model, train_dataset, val_dataset, training_args):
 
     return trainer
 
+
 def evaluate_model(trainer, val_dataset, all_labels, label_map):
     predictions = trainer.predict(val_dataset)
     predicted_labels = predictions.predictions.argmax(axis=1)
@@ -83,10 +88,14 @@ def evaluate_model(trainer, val_dataset, all_labels, label_map):
 
     return accuracy, actual_labels, predicted_labels, actual_labels_numeric
 
+
 def generate_classification_report(actual_labels_numeric, predicted_labels_numeric, all_labels):
     class_names = all_labels
-    report = classification_report(actual_labels_numeric, predicted_labels_numeric, labels=np.arange(0, len(all_labels)), target_names=class_names, digits=4, zero_division=0)
+    report = classification_report(actual_labels_numeric, predicted_labels_numeric,
+                                   labels=np.arange(0, len(all_labels)), target_names=class_names, digits=4,
+                                   zero_division=0)
     return report
+
 
 if __name__ == "__main__":
     texts = [
@@ -95,14 +104,12 @@ if __name__ == "__main__":
         "This is a neutral review.",
         "This is a mixed review."
     ]
-
     labels = [
         "positive",
         "negative",
         "neutral",
         "mixed"
     ]
-
     all_labels = ["positive", "negative", "neutral", "mixed"]
 
     train_dataset, val_dataset, tokenizer, label_map = prepare_datasets(texts, labels)
@@ -121,7 +128,8 @@ if __name__ == "__main__":
 
     trainer = train_model(model, train_dataset, val_dataset, training_args)
 
-    accuracy, actual_labels, predicted_labels, actual_labels_numeric = evaluate_model(trainer, val_dataset, all_labels, label_map)
+    accuracy, actual_labels, predicted_labels, actual_labels_numeric = evaluate_model(trainer, val_dataset, all_labels,
+                                                                                      label_map)
 
     print("Accuracy:", accuracy)
 
@@ -135,6 +143,6 @@ if __name__ == "__main__":
         print("Predicted labels:", predicted_labels)
         print("All labels:", all_labels)
 
-    report = generate_classification_report(actual_labels_numeric, [label_map[label] for label in predicted_labels], all_labels)
+    report = generate_classification_report(actual_labels_numeric, [label_map[label] for label in predicted_labels],
+                                            all_labels)
     print("Classification Report:\n", report)
-
