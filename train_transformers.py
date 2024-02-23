@@ -5,6 +5,8 @@ from sklearn.model_selection import train_test_split
 from transformers import RobertaForSequenceClassification, Trainer, TrainingArguments
 from transformers import RobertaTokenizer
 
+from preprocess_corpus import texts, labels
+
 
 class CustomDataCollator(torch.utils.data.DataLoader):
     def __init__(self, tokenizer):
@@ -31,7 +33,8 @@ class InputFeatures:
 
 
 def prepare_datasets(texts, labels, test_size=0.2, random_state=42):
-    label_map = {label: i for i, label in enumerate(labels)}
+    unique_labels = set(labels)
+    label_map = {label: i for i, label in enumerate(unique_labels)}
     labels_numeric = [label_map[label] for label in labels]
 
     tokenizer = RobertaTokenizer.from_pretrained("roberta-base")
@@ -77,15 +80,30 @@ def train_model(model, train_dataset, val_dataset, training_args):
 
 
 def evaluate_model(trainer, val_dataset, all_labels, label_map):
+    print("Type of trainer:", type(trainer))
+    print("Type of val_dataset:", type(val_dataset))
+    # Generate predictions using the trained model
     predictions = trainer.predict(val_dataset)
-    predicted_labels = predictions.predictions.argmax(axis=1)
-    predicted_labels = [all_labels[label] for label in predicted_labels]
+    print("Type of predictions:", type(predictions))
 
+    # Extract predicted labels from the predictions
+    predicted_labels_numeric = predictions.predictions.argmax(axis=1)
+    print("Type of predicted_labels_numeric:", type(predicted_labels_numeric))
+
+    # Convert predicted numeric labels to their corresponding string labels
+    predicted_labels = [all_labels[label] for label in predicted_labels_numeric]
+    print("Type of predicted_labels:", type(predicted_labels))
+
+    # Extract actual labels from the validation dataset
     actual_labels = [all_labels[label] for label in val_dataset.tensors[2].tolist()]
+
+    # Convert actual labels to their corresponding numeric labels using label map
     actual_labels_numeric = [label_map[label] for label in actual_labels]
 
-    accuracy = accuracy_score(actual_labels_numeric, predicted_labels)
+    # Calculate accuracy using actual and predicted labels
+    accuracy = accuracy_score(actual_labels_numeric, predicted_labels_numeric)
 
+    # Return accuracy and other evaluation metrics
     return accuracy, actual_labels, predicted_labels, actual_labels_numeric
 
 
@@ -98,21 +116,28 @@ def generate_classification_report(actual_labels_numeric, predicted_labels_numer
 
 
 if __name__ == "__main__":
-    texts = [
-        "This is a positive review.",
-        "This is a negative review.",
-        "This is a neutral review.",
-        "This is a mixed review."
-    ]
-    labels = [
-        "positive",
-        "negative",
-        "neutral",
-        "mixed"
-    ]
-    all_labels = ["positive", "negative", "neutral", "mixed"]
+    # texts = [
+    #     "This is a positive review.",
+    #     "This is a negative review.",
+    #     "This is a neutral review.",
+    #     "This is a mixed review."
+    # ]
+    # labels = [
+    #     "positive",
+    #     "negative",
+    #     "neutral",
+    #     "mixed"
+    # ]
+    # all_labels = ["positive", "negative", "neutral", "mixed"]
+    texts = texts[:100]
+    labels = labels[:100]
+    print(texts)
+    print(labels)
 
     train_dataset, val_dataset, tokenizer, label_map = prepare_datasets(texts, labels)
+
+    all_labels = list(set(labels))
+    # all_labels = [label for label in all_labels]
 
     model = RobertaForSequenceClassification.from_pretrained("roberta-base", num_labels=len(all_labels))
 
@@ -131,7 +156,7 @@ if __name__ == "__main__":
     accuracy, actual_labels, predicted_labels, actual_labels_numeric = evaluate_model(trainer, val_dataset, all_labels,
                                                                                       label_map)
 
-    print("Accuracy:", accuracy)
+    print("Accuracy:", accuracy)  # For the first 100 Accuracy: 0.65
 
     unique_labels = set(actual_labels)
     num_classes = len(all_labels)
