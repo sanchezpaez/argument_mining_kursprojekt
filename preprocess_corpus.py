@@ -31,7 +31,8 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score
 from transformers import RobertaForSequenceClassification
 
-from features import check_claim_verbs, extract_dependency_features_for_corpus, extract_ngram_features_for_corpus
+from features import check_claim_verbs, extract_dependency_features_for_corpus, extract_ngram_features_for_corpus, \
+    extract_topic_features
 
 ROOT = Path(__file__).parent.resolve()
 CORPUS = Path(f"{ROOT}/corpus/")
@@ -348,7 +349,9 @@ def create_term_document_matrix(X_train, y_train, X_dev, y_dev, include_addition
 
         # Concatenate additional n-gram features with the term-document matrices
         term_doc_matrix_train = np.hstack((term_doc_matrix_train.toarray(), ngram_matrix_train.toarray()))
+        print("Matrix_train shape after concatenating ngrams:", term_doc_matrix_train.shape)
         term_doc_matrix_dev = np.hstack((term_doc_matrix_dev.toarray(), ngram_matrix_dev.toarray()))
+        print("Matrix_dev shape after concatenating ngrams:", term_doc_matrix_dev.shape)
 
         # Extract dependency features for the corpus
         dependency_matrix_train = extract_dependency_features_for_corpus(X_train)
@@ -356,7 +359,27 @@ def create_term_document_matrix(X_train, y_train, X_dev, y_dev, include_addition
 
         # Concatenate dependency features with the term-document matrices
         term_doc_matrix_train = np.hstack((term_doc_matrix_train, dependency_matrix_train))
+        print("Matrix_train shape after concatenating dependencies:", term_doc_matrix_train.shape)
         term_doc_matrix_dev = np.hstack((term_doc_matrix_dev, dependency_matrix_dev))
+        print("Matrix_dev shape after concatenating dependencies:", term_doc_matrix_dev.shape)
+
+        # Extract topic modelling features for the corpus
+        topic_words_train, topic_distributions_train = extract_topic_features(X_train, vectorizer)
+        print(topic_distributions_train)
+        topic_features_dev, topic_distributions_dev = extract_topic_features(X_dev, vectorizer)
+        print(topic_distributions_dev)
+
+        # Encode features
+        encoded_topic_features_train = np.array(topic_distributions_train)
+        encoded_topic_features_dev = np.array(topic_distributions_dev)
+        print("Encoded topic features train shape:", encoded_topic_features_train.shape)
+        print("Encoded topic features dev shape:", encoded_topic_features_dev.shape)
+
+        # Concatenate TM features with the term-document matrices
+        term_doc_matrix_train = np.hstack((term_doc_matrix_train, encoded_topic_features_train))
+        print("Matrix_train shape after concatenating TM:", term_doc_matrix_train.shape)
+        term_doc_matrix_dev = np.hstack((term_doc_matrix_dev, encoded_topic_features_dev))
+        print("Matrix_dev shape after concatenating TM:", term_doc_matrix_dev.shape)
 
     print('Matrices with all features fitted')
     return term_doc_matrix_train, y_train, term_doc_matrix_dev, y_dev
@@ -420,5 +443,5 @@ y_dev_pred = classifier.predict(X_dev_term_doc_matrix)
 sleep(3)
 # Evaluate the classifier
 accuracy = accuracy_score(y_dev, y_dev_pred)
-print("Development Set Accuracy:", accuracy)  # 0.4789180588703262 no features, 0.48369132856006364 2 features
+print("Development Set Accuracy:", accuracy)  # 0.4789180588703262 no features, 0.48369132856006364 2 features, 0.4813046937151949 3 features
 

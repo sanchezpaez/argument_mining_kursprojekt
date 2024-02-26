@@ -1,5 +1,9 @@
 import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.decomposition import LatentDirichletAllocation
+from sklearn.feature_extraction.text import CountVectorizer
+import numpy as np
+from sklearn.preprocessing import OneHotEncoder
 
 
 def check_claim_verbs(sentence: list[str]) -> int:
@@ -49,7 +53,6 @@ def sent2features(sent, index):
     return word2features(sent, index)
 
 
-# Function to extract n-gram features for multiple texts
 def extract_ngram_features_for_corpus(texts, vectorizer=None):
     ngram_range = (1, 2)
     if vectorizer is None:
@@ -60,9 +63,30 @@ def extract_ngram_features_for_corpus(texts, vectorizer=None):
     return ngram_matrix, vectorizer
 
 
-# Function to extract dependency features for multiple texts
 def extract_dependency_features_for_corpus(texts):
     # Implement dependency parsing and extract features here
     # Placeholder implementation
     dependency_matrix = np.zeros((len(texts), 10))  # Example: 10 features per text
     return dependency_matrix
+
+
+def extract_topic_features(texts, vectorizer, num_topics=5, num_words=5):
+    # Transform the text data using the existing vectorizer
+    X = vectorizer.transform(texts)
+
+    # Initialize Latent Dirichlet Allocation (LDA) model
+    lda = LatentDirichletAllocation(n_components=num_topics, random_state=42)
+
+    # Fit LDA model to the data
+    lda.fit(X)
+
+    # Extract topic distributions for the text data
+    topic_distributions = lda.transform(X)
+
+    # Get the top words for each topic
+    top_words = []
+    feature_names = np.array(vectorizer.get_feature_names_out())
+    for topic_idx, topic in enumerate(lda.components_):
+        top_words.append([feature_names[i] for i in topic.argsort()[:-num_words - 1:-1]])
+
+    return top_words, topic_distributions
