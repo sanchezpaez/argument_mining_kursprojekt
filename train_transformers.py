@@ -156,7 +156,7 @@ if __name__ == "__main__":
     accuracy, actual_labels, predicted_labels, actual_labels_numeric = evaluate_model(trainer, val_dataset, all_labels,
                                                                                       label_map)
 
-    print("Accuracy:", accuracy)  # For the first 100 Accuracy: 0.65
+    print("Accuracy:", accuracy)  # For the first 100 Accuracy: 0.65 no features
 
     unique_labels = set(actual_labels)
     num_classes = len(all_labels)

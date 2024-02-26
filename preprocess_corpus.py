@@ -31,6 +31,8 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score
 from transformers import RobertaForSequenceClassification
 
+from features import check_claim_verbs, extract_dependency_features_for_corpus, extract_ngram_features_for_corpus
+
 ROOT = Path(__file__).parent.resolve()
 CORPUS = Path(f"{ROOT}/corpus/")
 ALL_ARTICLES = Path(f"{ROOT}/all_articles.txt")
@@ -312,16 +314,18 @@ def encode_and_split_data(texts, labels, test_size=0.2, dev_size=0.1, random_sta
     return X_train, X_dev, X_test, y_train, y_dev, y_test, mlb
 
 
-def create_term_document_matrix(X_train, y_train, X_dev, y_dev, additional_features=None):
+def create_term_document_matrix(X_train, y_train, X_dev, y_dev, include_additional_features=False):
     # Initialize a CountVectorizer or TfidfVectorizer
     vectorizer = TfidfVectorizer()  # You can change to CountVectorizer if you want simple word counts
 
-    # Fit the vectorizer to the data and transform the data
-    term_doc_matrix = vectorizer.fit_transform(X_train)
-    # print(term_doc_matrix)
+    # Fit the vectorizer to the training data and transform the data
+    term_doc_matrix_train = vectorizer.fit_transform(X_train)
+    # print(term_doc_matrix_train)
+    term_doc_matrix_dev = vectorizer.transform(X_dev)
+    print(term_doc_matrix_dev.shape)
+
+    # Convert labels to numpy arrays
     y_train = np.array(y_train)
-    X_dev = vectorizer.transform(X_dev)
-    print(X_dev.shape)
     y_dev = np.array(y_dev)
 
     # Check vectorization parameters
@@ -332,16 +336,30 @@ def create_term_document_matrix(X_train, y_train, X_dev, y_dev, additional_featu
     print("\nVocabulary Size:", len(vectorizer.vocabulary_))
 
     # Extract additional features if provided
-    if additional_features:
-        # Convert additional features to numpy array
-        additional_features_array = np.array(additional_features)
-        print("\nAdditional Features Shape:", additional_features_array.shape)
+    if include_additional_features:
+        ngram_matrix_train, _ = extract_ngram_features_for_corpus(X_train, vectorizer)
+        ngram_matrix_dev, _ = extract_ngram_features_for_corpus(X_dev, vectorizer)
 
-        # Concatenate additional features with the term-document matrix
-        term_doc_matrix = np.hstack((term_doc_matrix.toarray(), additional_features_array))
+        print("Shapes before concatenation:")
+        print("term_doc_matrix_train shape:", term_doc_matrix_train.shape)
+        print("term_doc_matrix_dev shape:", term_doc_matrix_dev.shape)
+        print("ngram_matrix_train shape:", ngram_matrix_train.shape)
+        print("ngram_matrix_dev shape:", ngram_matrix_dev.shape)
 
-    print('Matrix with all features fitted')
-    return term_doc_matrix, y_train, X_dev, y_dev
+        # Concatenate additional n-gram features with the term-document matrices
+        term_doc_matrix_train = np.hstack((term_doc_matrix_train.toarray(), ngram_matrix_train.toarray()))
+        term_doc_matrix_dev = np.hstack((term_doc_matrix_dev.toarray(), ngram_matrix_dev.toarray()))
+
+        # Extract dependency features for the corpus
+        dependency_matrix_train = extract_dependency_features_for_corpus(X_train)
+        dependency_matrix_dev = extract_dependency_features_for_corpus(X_dev)
+
+        # Concatenate dependency features with the term-document matrices
+        term_doc_matrix_train = np.hstack((term_doc_matrix_train, dependency_matrix_train))
+        term_doc_matrix_dev = np.hstack((term_doc_matrix_dev, dependency_matrix_dev))
+
+    print('Matrices with all features fitted')
+    return term_doc_matrix_train, y_train, term_doc_matrix_dev, y_dev
 
 
 # concatenate_txt_files(CORPUS, ALL_ARTICLES)
@@ -371,22 +389,25 @@ print(len(y_train))
 print(len(X_dev))
 print(len(y_dev))
 
-# Assuming X_train, X_dev, and X_test are your text data, and additional_features_train,
-# additional_features_dev, and additional_features_test are additional features relevant
-# for claims and premises
-# You need to replace them with your actual data
-X_train_term_doc_matrix, y_train, X_dev, y_dev = create_term_document_matrix(X_train, y_train, X_dev, y_dev)
-# X_train_term_doc_matrix = create_term_document_matrix(X_train, additional_features=additional_features_train)
 
-# save_data(X_train_term_doc_matrix, 'ov_X_train.pkl')
-# save_data(X_dev, 'ov_X_dev.pkl')
-# save_data(y_train, 'ov_y_train.pkl')
-# save_data(y_dev, 'ov_y_dev.pkl')
 
-load_data('ov_X_train.pkl')
-load_data('ov_X_dev.pkl')
-load_data('ov_y_train.pkl')
-load_data('ov_y_dev.pkl')
+# X_train_term_doc_matrix, y_train, X_dev, y_dev = create_term_document_matrix(X_train, y_train, X_dev, y_dev)
+# With features claculated within matrix function
+X_train_term_doc_matrix, y_train, X_dev_term_doc_matrix, y_dev = create_term_document_matrix(X_train, y_train, X_dev, y_dev, include_additional_features=True)
+print("X_train_term_doc_matrix shape:", X_train_term_doc_matrix.shape)
+print("X_dev_term_doc_matrix shape:", X_dev_term_doc_matrix.shape)
+
+
+
+save_data(X_train_term_doc_matrix, 'ov_X_train.pkl')
+save_data(X_dev_term_doc_matrix, 'ov_X_dev.pkl')
+save_data(y_train, 'ov_y_train.pkl')
+save_data(y_dev, 'ov_y_dev.pkl')
+
+# load_data('ov_X_train.pkl')
+# load_data('ov_X_dev.pkl')
+# load_data('ov_y_train.pkl')
+# load_data('ov_y_dev.pkl')
 
 # Initialize the RandomForestClassifier
 classifier = RandomForestClassifier()
@@ -395,9 +416,9 @@ sleep(3)
 classifier.fit(X_train_term_doc_matrix, y_train)
 sleep(3)
 # Predict on the development set
-y_dev_pred = classifier.predict(X_dev)
+y_dev_pred = classifier.predict(X_dev_term_doc_matrix)
 sleep(3)
 # Evaluate the classifier
 accuracy = accuracy_score(y_dev, y_dev_pred)
-print("Development Set Accuracy:", accuracy)  # 0.4789180588703262
+print("Development Set Accuracy:", accuracy)  # 0.4789180588703262 no features, 0.48369132856006364 2 features
 
