@@ -318,8 +318,7 @@ def encode_and_split_data(texts, labels, test_size=0.2, dev_size=0.1, random_sta
 
 
 def create_term_document_matrix(X_train, y_train, X_dev, y_dev, include_additional_features=False):
-    # Initialize a CountVectorizer or TfidfVectorizer
-    vectorizer = TfidfVectorizer()  # You can change to CountVectorizer if you want simple word counts
+    vectorizer = TfidfVectorizer()
 
     # Fit the vectorizer to the training data and transform the data
     term_doc_matrix_train = vectorizer.fit_transform(X_train)
@@ -340,10 +339,9 @@ def create_term_document_matrix(X_train, y_train, X_dev, y_dev, include_addition
 
     # Extract additional features if provided
     if include_additional_features:
+        # 1) NGRAMS
         ngram_matrix_train, _ = extract_ngram_features_for_corpus(X_train, vectorizer)
         ngram_matrix_dev, _ = extract_ngram_features_for_corpus(X_dev, vectorizer)
-
-        print("Shapes before concatenation:")
         print("term_doc_matrix_train shape:", term_doc_matrix_train.shape)
         print("term_doc_matrix_dev shape:", term_doc_matrix_dev.shape)
         print("ngram_matrix_train shape:", ngram_matrix_train.shape)
@@ -355,6 +353,7 @@ def create_term_document_matrix(X_train, y_train, X_dev, y_dev, include_addition
         term_doc_matrix_dev = np.hstack((term_doc_matrix_dev.toarray(), ngram_matrix_dev.toarray()))
         print("Matrix_dev shape after concatenating ngrams:", term_doc_matrix_dev.shape)
 
+        # 2) TOPIC MODELLING
         # Extract topic modelling features for the corpus
         topic_words_train, topic_distributions_train = extract_topic_features(X_train, vectorizer)
         # print(topic_distributions_train)
@@ -373,6 +372,7 @@ def create_term_document_matrix(X_train, y_train, X_dev, y_dev, include_addition
         term_doc_matrix_dev = np.hstack((term_doc_matrix_dev, encoded_topic_features_dev))
         print("Matrix_dev shape after concatenating TM:", term_doc_matrix_dev.shape)
 
+        # 3) DEPENDENCIES
         # Extract dependency features for the corpus
         dependency_matrix_train = extract_dependency_features_for_corpus(X_train)
         print("dependency_matrix_train shape:", dependency_matrix_train.shape)
@@ -395,6 +395,25 @@ def create_term_document_matrix(X_train, y_train, X_dev, y_dev, include_addition
         term_doc_matrix_dev = np.hstack((term_doc_matrix_dev, dependency_matrix_dev))
         print("Matrix_dev shape after concatenating dependencies:", term_doc_matrix_dev.shape)
 
+        # 4) CLAIM VERBS
+        # Check for claim-related verbs
+        claim_train = [check_claim_verbs(text) for text in X_train]
+        claim_dev = [check_claim_verbs(text) for text in X_dev]
+        # Convert to arrays
+        claim_train = np.array(claim_train)
+        # Reshape claim_train to a column vector
+        claim_train = claim_train.reshape(-1, 1)
+        print("claim_matrix_train shape:", claim_train.shape)
+        claim_dev = np.array(claim_dev)
+        print("claim_matrix_dev shape:", claim_dev.shape)
+        # Reshape claim_train to a column vector
+        claim_dev = claim_dev.reshape(-1, 1)
+        # Concatenate
+        term_doc_matrix_train = np.hstack((term_doc_matrix_train, claim_train))
+        print("Matrix_train shape after concatenating claim-related features:", term_doc_matrix_train.shape)
+        term_doc_matrix_dev = np.hstack((term_doc_matrix_dev, claim_dev))
+        print("Matrix_dev shape after concatenating claim-related features:", term_doc_matrix_dev.shape)
+
     print('Matrices with all features fitted')
     return term_doc_matrix_train, y_train, term_doc_matrix_dev, y_dev
 
@@ -407,6 +426,7 @@ articles_df, claims_n_premises_df = transform_files_to_dataframes('merged_output
 # print(articles_df[:10])
 # print(claims_n_premises_df[:10])
 
+# Get and preprocess labelled texts
 texts, labels = get_labelled_sentences_from_data(articles_df, claims_n_premises_df)
 print(f"There are {len(texts)} texts")
 print(f"There are {len(labels)} labels")
@@ -431,14 +451,8 @@ print(len(X_dev))
 print(len(y_dev))
 
 
-
-# X_train_term_doc_matrix, y_train, X_dev, y_dev = create_term_document_matrix(X_train, y_train, X_dev, y_dev)
 # With features claculated within matrix function
 X_train_term_doc_matrix, y_train, X_dev_term_doc_matrix, y_dev = create_term_document_matrix(X_train, y_train, X_dev, y_dev, include_additional_features=True)
-print("X_train_term_doc_matrix shape:", X_train_term_doc_matrix.shape)
-print("X_dev_term_doc_matrix shape:", X_dev_term_doc_matrix.shape)
-
-
 
 save_data(X_train_term_doc_matrix, 'ov_X_train.pkl')
 save_data(X_dev_term_doc_matrix, 'ov_X_dev.pkl')
@@ -462,4 +476,9 @@ sleep(3)
 # Evaluate the classifier
 accuracy = accuracy_score(y_dev, y_dev_pred)
 print("Development Set Accuracy:", accuracy)  # 0.4789180588703262 no features, 0.48369132856006364 2 features, 0.4813046937151949 3 features
+# After removing empty texts: 0.36728395061728397 no features
+report = classification_report(y_dev, y_dev_pred, labels=np.arange(0, num_classes), target_names=unique_labels, digits=4, zero_division=0)
+print("Classification Report:")
+print(report)
+
 

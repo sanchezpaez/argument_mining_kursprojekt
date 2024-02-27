@@ -1,6 +1,8 @@
 import numpy as np
 import click.termui
 import spacy
+import nltk
+from nltk.tokenize import word_tokenize
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.decomposition import LatentDirichletAllocation
 from sklearn.feature_extraction.text import CountVectorizer
@@ -125,3 +127,9 @@ def extract_topic_features(texts, vectorizer, num_topics=5, num_words=5):
         top_words.append([feature_names[i] for i in topic.argsort()[:-num_words - 1:-1]])
 
     return top_words, topic_distributions
+
+
+def extract_pos_tags(text):
+    words = word_tokenize(text)
+    pos_tags = nltk.pos_tag(words)
+    return pos_tags
