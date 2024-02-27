@@ -355,37 +355,11 @@ def create_term_document_matrix(X_train, y_train, X_dev, y_dev, include_addition
         term_doc_matrix_dev = np.hstack((term_doc_matrix_dev.toarray(), ngram_matrix_dev.toarray()))
         print("Matrix_dev shape after concatenating ngrams:", term_doc_matrix_dev.shape)
 
-        # Extract dependency features for the corpus
-        dependency_matrix_train = extract_dependency_features_for_corpus(X_train)
-        print(f"The type of the train dependency matrix is {type(dependency_matrix_train)}, the length is {len(dependency_matrix_train)}")
-        # Filter out empty lists and ensure all lists have consistent length
-        dependency_matrix_train = [d for d in dependency_matrix_train if d and len(d) > 0]
-        # print(dependency_matrix_train)
-        # print("dependency_matrix_train shape:", dependency_matrix_train.shape)
-
-        dependency_matrix_dev = extract_dependency_features_for_corpus(X_dev)
-        print(f"The type of the dev dependency matrix is {type(dependency_matrix_train)}, the length is {len(dependency_matrix_train)}")
-        dependency_matrix_dev = [d for d in dependency_matrix_dev if d and len(d) > 0]
-
-        # Convert dependency matrices from lists to NumPy arrays
-        dependency_matrix_train = np.array([np.array(d) for d in dependency_matrix_train])
-        dependency_matrix_dev = np.array([np.array(d) for d in dependency_matrix_dev])
-
-        # print("dependency_matrix_dev shape:", dependency_matrix_dev.shape)
-
-
-
-        # Concatenate dependency features with the term-document matrices
-        term_doc_matrix_train = np.hstack((term_doc_matrix_train, dependency_matrix_train))
-        print("Matrix_train shape after concatenating dependencies:", term_doc_matrix_train.shape)
-        term_doc_matrix_dev = np.hstack((term_doc_matrix_dev, dependency_matrix_dev))
-        print("Matrix_dev shape after concatenating dependencies:", term_doc_matrix_dev.shape)
-
         # Extract topic modelling features for the corpus
         topic_words_train, topic_distributions_train = extract_topic_features(X_train, vectorizer)
-        print(topic_distributions_train)
+        # print(topic_distributions_train)
         topic_features_dev, topic_distributions_dev = extract_topic_features(X_dev, vectorizer)
-        print(topic_distributions_dev)
+        # print(topic_distributions_dev)
 
         # Encode features
         encoded_topic_features_train = np.array(topic_distributions_train)
@@ -398,6 +372,28 @@ def create_term_document_matrix(X_train, y_train, X_dev, y_dev, include_addition
         print("Matrix_train shape after concatenating TM:", term_doc_matrix_train.shape)
         term_doc_matrix_dev = np.hstack((term_doc_matrix_dev, encoded_topic_features_dev))
         print("Matrix_dev shape after concatenating TM:", term_doc_matrix_dev.shape)
+
+        # Extract dependency features for the corpus
+        dependency_matrix_train = extract_dependency_features_for_corpus(X_train)
+        print("dependency_matrix_train shape:", dependency_matrix_train.shape)
+        # Filter out empty lists and ensure all lists have consistent length
+        # dependency_matrix_train = [d for d in dependency_matrix_train if d and len(d) > 0]
+
+        dependency_matrix_dev = extract_dependency_features_for_corpus(X_dev, dependency_matrix_train)
+        print("dependency_matrix_dev shape:", dependency_matrix_dev.shape)
+        # dependency_matrix_dev = [d for d in dependency_matrix_dev if d and len(d) > 0]
+
+        # # Convert dependency matrices from lists to NumPy arrays
+        dependency_matrix_train = np.array(dependency_matrix_train)
+        # print("dependency_matrix_train shape:", dependency_matrix_train.shape)
+        dependency_matrix_dev = np.array(dependency_matrix_dev)
+        # print("dependency_matrix_dev shape:", dependency_matrix_dev.shape)
+
+        # Concatenate dependency features with the term-document matrices
+        term_doc_matrix_train = np.hstack((term_doc_matrix_train, dependency_matrix_train))
+        print("Matrix_train shape after concatenating dependencies:", term_doc_matrix_train.shape)
+        term_doc_matrix_dev = np.hstack((term_doc_matrix_dev, dependency_matrix_dev))
+        print("Matrix_dev shape after concatenating dependencies:", term_doc_matrix_dev.shape)
 
     print('Matrices with all features fitted')
     return term_doc_matrix_train, y_train, term_doc_matrix_dev, y_dev

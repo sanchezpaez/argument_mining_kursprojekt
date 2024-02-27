@@ -65,7 +65,7 @@ def extract_ngram_features_for_corpus(texts, vectorizer=None):
     return ngram_matrix, vectorizer
 
 
-def extract_dependency_features_for_corpus(texts):
+def extract_dependency_features_for_corpus(texts, train_dependency_matrix=None):
     try:
         nlp = spacy.load("en_core_web_sm")
     except ImportError as e:
@@ -73,14 +73,36 @@ def extract_dependency_features_for_corpus(texts):
         return None
 
     dependency_matrix = []
+    all_features = set()
+
     for text in texts:
         doc = nlp(text)
         features = []
         for token in doc:
             # Extract features from the dependency tree
             features.append(token.dep_)
+            all_features.add(token.dep_)  # Collect all unique features
         dependency_matrix.append(features)
-    return dependency_matrix
+
+    # Use the features from the training set if provided
+    if train_dependency_matrix is not None:
+        all_features = set(np.nonzero(train_dependency_matrix)[1])
+
+    # Convert dependency features to a binary matrix
+    binary_matrix = np.zeros((len(texts), len(all_features)), dtype=int)
+    feature_index_map = {feature: i for i, feature in enumerate(sorted(all_features))}
+
+    for i, doc_features in enumerate(dependency_matrix):
+        for feature in doc_features:
+            # Check if the feature exists in the index map
+            if feature in feature_index_map:
+                binary_matrix[i, feature_index_map[feature]] = 1
+            else:
+                # Handle the case when the feature is not found (e.g., 'ROOT')
+                # Assign a default index or ignore it
+                pass
+
+    return binary_matrix
 
 
 def extract_topic_features(texts, vectorizer, num_topics=5, num_words=5):
