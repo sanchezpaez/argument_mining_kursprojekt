@@ -159,17 +159,6 @@ def read_annotations(annotations_file):
     return annotations
 
 
-def read_annotations(annotations_file):
-    annotations = {}
-    with open(annotations_file, 'r') as file:
-        for line in file:
-            parts = line.strip().split('\t')
-            filename = parts[0]
-            label = parts[1]
-            annotations[(filename, label)] = parts[2]
-    return annotations
-
-
 def merge_txt_files(directory):
     output_file = "merged_output.txt"
 
@@ -225,13 +214,21 @@ def get_labelled_sentences_from_data(articles_dataframe, claims_n_premises_dataf
             if fragment_index != -1:
                 # Store the unlabelled fragment before the labelled fragment
                 if start_index < fragment_index:
-                    unlabelled_fragment = article_text[start_index:fragment_index]
-                    texts.append(unlabelled_fragment)
-                    labels.append('non-argumentative')
+                    unlabelled_fragment = article_text[start_index:fragment_index].strip()  # Strip whitespace
+                    # Check if the unlabelled fragment is not empty
+                    if unlabelled_fragment:
+                        preprocessed_fragment = preprocess_text(unlabelled_fragment)
+                        # Check if the preprocessed fragment is not empty
+                        if preprocessed_fragment:
+                            texts.append(preprocessed_fragment)
+                            labels.append('non-argumentative')
 
                 # Store the labelled fragment
-                texts.append(claim_text)
-                labels.append(label)
+                preprocessed_claim = preprocess_text(claim_text)
+                # Check if the preprocessed claim is not empty
+                if preprocessed_claim:
+                    texts.append(preprocessed_claim)
+                    labels.append(label)
 
                 # Update indices for the next iteration
                 start_index = fragment_index + len(claim_text)
@@ -239,9 +236,14 @@ def get_labelled_sentences_from_data(articles_dataframe, claims_n_premises_dataf
 
         # Store the remaining unlabelled fragment, if any
         if end_index < len(article_text):
-            unlabelled_fragment = article_text[end_index:]
-            texts.append(unlabelled_fragment)
-            labels.append('non-argumentative')
+            unlabelled_fragment = article_text[end_index:].strip()  # Strip whitespace
+            # Check if the unlabelled fragment is not empty
+            if unlabelled_fragment:
+                preprocessed_fragment = preprocess_text(unlabelled_fragment)
+                # Check if the preprocessed fragment is not empty
+                if preprocessed_fragment:
+                    texts.append(preprocessed_fragment)
+                    labels.append('non-argumentative')
 
     return texts, labels
 
@@ -355,7 +357,23 @@ def create_term_document_matrix(X_train, y_train, X_dev, y_dev, include_addition
 
         # Extract dependency features for the corpus
         dependency_matrix_train = extract_dependency_features_for_corpus(X_train)
+        print(f"The type of the train dependency matrix is {type(dependency_matrix_train)}, the length is {len(dependency_matrix_train)}")
+        # Filter out empty lists and ensure all lists have consistent length
+        dependency_matrix_train = [d for d in dependency_matrix_train if d and len(d) > 0]
+        # print(dependency_matrix_train)
+        # print("dependency_matrix_train shape:", dependency_matrix_train.shape)
+
         dependency_matrix_dev = extract_dependency_features_for_corpus(X_dev)
+        print(f"The type of the dev dependency matrix is {type(dependency_matrix_train)}, the length is {len(dependency_matrix_train)}")
+        dependency_matrix_dev = [d for d in dependency_matrix_dev if d and len(d) > 0]
+
+        # Convert dependency matrices from lists to NumPy arrays
+        dependency_matrix_train = np.array([np.array(d) for d in dependency_matrix_train])
+        dependency_matrix_dev = np.array([np.array(d) for d in dependency_matrix_dev])
+
+        # print("dependency_matrix_dev shape:", dependency_matrix_dev.shape)
+
+
 
         # Concatenate dependency features with the term-document matrices
         term_doc_matrix_train = np.hstack((term_doc_matrix_train, dependency_matrix_train))
@@ -394,6 +412,10 @@ articles_df, claims_n_premises_df = transform_files_to_dataframes('merged_output
 # print(claims_n_premises_df[:10])
 
 texts, labels = get_labelled_sentences_from_data(articles_df, claims_n_premises_df)
+print(f"There are {len(texts)} texts")
+print(f"There are {len(labels)} labels")
+print(texts[:100])
+print(labels[:100])
 # Get unique labels
 unique_labels = set(labels)
 num_classes = len(unique_labels)
@@ -403,10 +425,10 @@ print(f"The number of classes is {num_classes}")
 # print(len(labels))  # 12570
 # preprocessed_texts = preprocess_text_fragments(texts, 'preprocessed_texts.pkl')  # The number of preprocessed sentences is 12570.
 # print(preprocessed_texts)
-preprocessed_texts = load_data('preprocessed_texts.pkl')
+# preprocessed_texts = load_data('preprocessed_texts.pkl')
 
 # Encode and split the data
-X_train, X_dev, X_test, y_train, y_dev, y_test, mlb = encode_and_split_data(preprocessed_texts, labels)
+X_train, X_dev, X_test, y_train, y_dev, y_test, mlb = encode_and_split_data(texts, labels)
 print(len(X_train))
 print(len(y_train))
 print(len(X_dev))

@@ -26,3 +26,5 @@ accelerate/
 check_dependencies.py
 roberta_sequence_classification_model
 results/
+.env/
+env/

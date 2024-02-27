@@ -1,4 +1,6 @@
 import numpy as np
+import click.termui
+import spacy
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.decomposition import LatentDirichletAllocation
 from sklearn.feature_extraction.text import CountVectorizer
@@ -64,9 +66,20 @@ def extract_ngram_features_for_corpus(texts, vectorizer=None):
 
 
 def extract_dependency_features_for_corpus(texts):
-    # Implement dependency parsing and extract features here
-    # Placeholder implementation
-    dependency_matrix = np.zeros((len(texts), 10))  # Example: 10 features per text
+    try:
+        nlp = spacy.load("en_core_web_sm")
+    except ImportError as e:
+        print("Error loading SpaCy model:", e)
+        return None
+
+    dependency_matrix = []
+    for text in texts:
+        doc = nlp(text)
+        features = []
+        for token in doc:
+            # Extract features from the dependency tree
+            features.append(token.dep_)
+        dependency_matrix.append(features)
     return dependency_matrix
 
 
