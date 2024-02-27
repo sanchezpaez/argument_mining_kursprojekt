@@ -31,8 +31,10 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score
 from transformers import RobertaForSequenceClassification
 
+from evaluate import generate_classification_report
 from features import check_claim_verbs, extract_dependency_features_for_corpus, extract_ngram_features_for_corpus, \
     extract_topic_features
+
 
 ROOT = Path(__file__).parent.resolve()
 CORPUS = Path(f"{ROOT}/corpus/")
@@ -188,7 +190,7 @@ def transform_files_to_dataframes(articles_file, annotations_file):
     return articles_dataframe, claims_n_premises_dataframe
 
 
-def get_labelled_sentences_from_data(articles_dataframe, claims_n_premises_dataframe):
+def get_labelled_sentences_from_data(articles_dataframe, claims_n_premises_dataframe, preprocess=False):
     # Create empty lists to store texts and labels
     texts = []
     labels = []
@@ -217,14 +219,20 @@ def get_labelled_sentences_from_data(articles_dataframe, claims_n_premises_dataf
                     unlabelled_fragment = article_text[start_index:fragment_index].strip()  # Strip whitespace
                     # Check if the unlabelled fragment is not empty
                     if unlabelled_fragment:
-                        preprocessed_fragment = preprocess_text(unlabelled_fragment)
+                        if preprocess:
+                            preprocessed_fragment = preprocess_text(unlabelled_fragment)
+                        else:
+                            preprocessed_fragment = unlabelled_fragment
                         # Check if the preprocessed fragment is not empty
                         if preprocessed_fragment:
                             texts.append(preprocessed_fragment)
                             labels.append('non-argumentative')
 
                 # Store the labelled fragment
-                preprocessed_claim = preprocess_text(claim_text)
+                if preprocess:
+                    preprocessed_claim = preprocess_text(claim_text)
+                else:
+                    preprocessed_claim = claim_text
                 # Check if the preprocessed claim is not empty
                 if preprocessed_claim:
                     texts.append(preprocessed_claim)
@@ -239,7 +247,10 @@ def get_labelled_sentences_from_data(articles_dataframe, claims_n_premises_dataf
             unlabelled_fragment = article_text[end_index:].strip()  # Strip whitespace
             # Check if the unlabelled fragment is not empty
             if unlabelled_fragment:
-                preprocessed_fragment = preprocess_text(unlabelled_fragment)
+                if preprocess:
+                    preprocessed_fragment = preprocess_text(unlabelled_fragment)
+                else:
+                    preprocessed_fragment = unlabelled_fragment
                 # Check if the preprocessed fragment is not empty
                 if preprocessed_fragment:
                     texts.append(preprocessed_fragment)
@@ -418,67 +429,74 @@ def create_term_document_matrix(X_train, y_train, X_dev, y_dev, include_addition
     return term_doc_matrix_train, y_train, term_doc_matrix_dev, y_dev
 
 
-# concatenate_txt_files(CORPUS, ALL_ARTICLES)
-process_annotations(SEMANTIC_TYPES, 'all_sorted_annotated_texts.txt', CORPUS)
-
-merge_txt_files(CORPUS)  # Returns 'merged_output.txt'
-articles_df, claims_n_premises_df = transform_files_to_dataframes('merged_output.txt', 'all_sorted_annotated_texts.txt')
-# print(articles_df[:10])
-# print(claims_n_premises_df[:10])
-
-# Get and preprocess labelled texts
-texts, labels = get_labelled_sentences_from_data(articles_df, claims_n_premises_df)
-print(f"There are {len(texts)} texts")
-print(f"There are {len(labels)} labels")
-print(texts[:100])
-print(labels[:100])
-# Get unique labels
-unique_labels = set(labels)
-num_classes = len(unique_labels)
-print(f"The number of classes is {num_classes}")
-# print(texts)
-# print(labels)
-# print(len(labels))  # 12570
-# preprocessed_texts = preprocess_text_fragments(texts, 'preprocessed_texts.pkl')  # The number of preprocessed sentences is 12570.
-# print(preprocessed_texts)
-# preprocessed_texts = load_data('preprocessed_texts.pkl')
-
-# Encode and split the data
-X_train, X_dev, X_test, y_train, y_dev, y_test, mlb = encode_and_split_data(texts, labels)
-print(len(X_train))
-print(len(y_train))
-print(len(X_dev))
-print(len(y_dev))
+def save_matrices(X_train_matrix, y_train, X_dev_matrix, y_dev):
+    save_data(X_train_matrix, 'X_train.pkl')
+    save_data(X_dev_matrix, 'X_dev.pkl')
+    save_data(y_train, 'y_train.pkl')
+    save_data(y_dev, 'y_dev.pkl')
 
 
-# With features claculated within matrix function
-X_train_term_doc_matrix, y_train, X_dev_term_doc_matrix, y_dev = create_term_document_matrix(X_train, y_train, X_dev, y_dev, include_additional_features=True)
+def load_matrices():
+    X_train = load_data('X_train.pkl')
+    X_dev = load_data('X_dev.pkl')
+    y_train = load_data('y_train.pkl')
+    y_dev = load_data('y_dev.pkl')
 
-save_data(X_train_term_doc_matrix, 'ov_X_train.pkl')
-save_data(X_dev_term_doc_matrix, 'ov_X_dev.pkl')
-save_data(y_train, 'ov_y_train.pkl')
-save_data(y_dev, 'ov_y_dev.pkl')
+    return X_train, X_dev, y_train, y_dev
 
-# load_data('ov_X_train.pkl')
-# load_data('ov_X_dev.pkl')
-# load_data('ov_y_train.pkl')
-# load_data('ov_y_dev.pkl')
 
-# Initialize the RandomForestClassifier
-classifier = RandomForestClassifier()
-sleep(3)
-# Train the classifier
-classifier.fit(X_train_term_doc_matrix, y_train)
-sleep(3)
-# Predict on the development set
-y_dev_pred = classifier.predict(X_dev_term_doc_matrix)
-sleep(3)
-# Evaluate the classifier
-accuracy = accuracy_score(y_dev, y_dev_pred)
-print("Development Set Accuracy:", accuracy)  # 0.4789180588703262 no features, 0.48369132856006364 2 features, 0.4813046937151949 3 features
-# After removing empty texts: 0.36728395061728397 no features
-report = classification_report(y_dev, y_dev_pred, labels=np.arange(0, num_classes), target_names=unique_labels, digits=4, zero_division=0)
-print("Classification Report:")
-print(report)
+if __name__ == '__main__':
+    concatenate_txt_files(CORPUS, ALL_ARTICLES)
+    process_annotations(SEMANTIC_TYPES, 'all_sorted_annotated_texts.txt', CORPUS)
+    merge_txt_files(CORPUS)  # Returns 'merged_output.txt'
+    articles_df, claims_n_premises_df = transform_files_to_dataframes('merged_output.txt', 'all_sorted_annotated_texts.txt')
+
+    # Get and preprocess labelled texts
+    # texts, labels = get_labelled_sentences_from_data(articles_df, claims_n_premises_df)
+    # print(f"There are {len(texts)} texts") # 12570
+    # print(f"There are {len(labels)} labels")
+    # save_data(texts, 'texts.pkl')
+    # save_data(labels, 'labels.pkl')
+
+    preprocessed_texts, preprocessed_labels = get_labelled_sentences_from_data(articles_df, claims_n_premises_df, preprocess=True)
+    print(f"There are {len(preprocessed_texts)} preprocessed texts") # 9712 after empty texts removed
+    print(f"There are {len(preprocessed_labels)} preprocessed labels")
+    save_data(preprocessed_texts, 'preprocessed_texts.pkl')
+    save_data(preprocessed_labels, 'preprocessed_labels.pkl')
+    labels = preprocessed_labels
+    texts = preprocessed_texts
+
+    # Get unique labels
+    unique_labels = set(labels)
+    num_classes = len(unique_labels)
+    print(f"The number of classes is {num_classes}")
+
+    # Encode and split the data
+    X_train, X_dev, X_test, y_train, y_dev, y_test, mlb = encode_and_split_data(texts, labels)
+    print(len(X_train))
+    print(len(y_train))
+    print(len(X_dev))
+    print(len(y_dev))
+
+    # With features claculated within matrix function
+    X_train_term_doc_matrix, y_train, X_dev_term_doc_matrix, y_dev = create_term_document_matrix(X_train, y_train, X_dev, y_dev, include_additional_features=True)
+    save_matrices(X_train_term_doc_matrix, y_train, X_dev_term_doc_matrix, y_dev)
+    # X_train_term_doc_matrix, y_train, X_dev_term_doc_matrix, y_dev = load_matrices()
+
+    # Initialize the RandomForestClassifier
+    classifier = RandomForestClassifier()
+    sleep(2)
+    # Train the classifier
+    classifier.fit(X_train_term_doc_matrix, y_train)
+    sleep(2)
+    # Predict on the development set
+    y_dev_pred = classifier.predict(X_dev_term_doc_matrix)
+    sleep(2)
+    # Evaluate the classifier
+    accuracy = accuracy_score(y_dev, y_dev_pred)
+    print("Development Set Accuracy:", accuracy)  # 0.4789180588703262 no features, 0.48369132856006364 2 features, 0.4813046937151949 3 features
+    # After removing empty texts: 0.36728395061728397 no features
+    report = generate_classification_report(y_dev, y_dev_pred, unique_labels)
+
 
 

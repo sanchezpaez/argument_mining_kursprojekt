@@ -13,10 +13,10 @@ X_train_vectorized.csv
 y_dev.csv
 y_test.csv
 y_train.csv
-ov_X_train.pkl
-ov_X_dev.pkl
-ov_y_train.pkl
-ov_y_dev.pkl
+X_train.pkl
+X_dev.pkl
+y_train.pkl
+y_dev.pkl
 experiments.py
 
 preprocessed_texts.pkl

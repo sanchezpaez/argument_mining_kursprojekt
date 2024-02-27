@@ -5,7 +5,8 @@ from sklearn.model_selection import train_test_split
 from transformers import RobertaForSequenceClassification, Trainer, TrainingArguments
 from transformers import RobertaTokenizer
 
-from preprocess_corpus import texts, labels
+from evaluate import generate_classification_report
+from preprocess_corpus import load_data
 
 
 class CustomDataCollator(torch.utils.data.DataLoader):
@@ -107,12 +108,7 @@ def evaluate_model(trainer, val_dataset, all_labels, label_map):
     return accuracy, actual_labels, predicted_labels, actual_labels_numeric
 
 
-def generate_classification_report(actual_labels_numeric, predicted_labels_numeric, all_labels):
-    class_names = all_labels
-    report = classification_report(actual_labels_numeric, predicted_labels_numeric,
-                                   labels=np.arange(0, len(all_labels)), target_names=class_names, digits=4,
-                                   zero_division=0)
-    return report
+
 
 
 if __name__ == "__main__":
@@ -129,15 +125,16 @@ if __name__ == "__main__":
     #     "mixed"
     # ]
     # all_labels = ["positive", "negative", "neutral", "mixed"]
-    texts = texts[:100]
-    labels = labels[:100]
-    print(texts)
-    print(labels)
+    texts = load_data('texts.pkl')
+    labels = load_data('labels.pkl')
+    texts = texts[:1000]
+    labels = labels[:1000]
+    # print(texts)
+    # print(labels)
 
     train_dataset, val_dataset, tokenizer, label_map = prepare_datasets(texts, labels)
 
     all_labels = list(set(labels))
-    # all_labels = [label for label in all_labels]
 
     model = RobertaForSequenceClassification.from_pretrained("roberta-base", num_labels=len(all_labels))
 
@@ -155,7 +152,6 @@ if __name__ == "__main__":
 
     accuracy, actual_labels, predicted_labels, actual_labels_numeric = evaluate_model(trainer, val_dataset, all_labels,
                                                                                       label_map)
-
     print("Accuracy:", accuracy)  # For the first 100 Accuracy: 0.65 no features
 
     unique_labels = set(actual_labels)
@@ -170,4 +166,3 @@ if __name__ == "__main__":
 
     report = generate_classification_report(actual_labels_numeric, [label_map[label] for label in predicted_labels],
                                             all_labels)
-    print("Classification Report:\n", report)
