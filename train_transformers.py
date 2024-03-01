@@ -10,26 +10,20 @@ from evaluate import generate_classification_report
 from preprocess_corpus import load_data
 
 
-class CustomDataCollator:
+class CustomDataCollator(torch.utils.data.DataLoader):
+    def __init__(self, tokenizer):
+        self.tokenizer = tokenizer
     def __call__(self, features):
-        print("Number of features:", len(features))
-        print("Feature example:", features[0])
-        # Prepare input tensors
-        input_ids = torch.stack([f[0] for f in features], dim=0)
-        print("Input IDs shape:", input_ids.shape)
-        attention_mask = torch.tensor([f[1] for f in features], dtype=torch.long)
-        print("Attention mask shape:", attention_mask.shape)
-
-        # Prepare labels tensor
-        # Extract labels from the third element of each feature and convert to tensor
-        labels = [torch.tensor(f[2], dtype=torch.long) for f in features]
-        print("Labels length:", len(labels))
-
-        return {
-            'input_ids': input_ids,
-            'attention_mask': attention_mask,
-            'labels': labels
-        }
+        batch = {}
+        if isinstance(features[0], tuple):
+            batch['input_ids'] = torch.stack([f[0] for f in features])
+            batch['attention_mask'] = torch.stack([f[1] for f in features])
+            batch['labels'] = torch.tensor([f[2] for f in features], dtype=torch.long)
+        else:
+            batch['input_ids'] = torch.stack([torch.tensor(f.input_ids, dtype=torch.long) for f in features])
+            batch['attention_mask'] = torch.stack([torch.tensor(f.attention_mask, dtype=torch.long) for f in features])
+            batch['labels'] = torch.tensor([f.label for f in features], dtype=torch.long)
+        return batch
 
 
 class InputFeatures:
@@ -39,69 +33,43 @@ class InputFeatures:
         self.label = label
 
 
-def prepare_datasets(X_train, y_train, X_val, y_val, tokenizer, unique_labels):
-    # Flatten y_train and y_val
-    y_train_flat = [label for sublist in y_train for label in sublist]
-    y_val_flat = [label for sublist in y_val for label in sublist]
+def prepare_datasets(X_train, y_train, X_val, y_val, labels):
+    label_map = {label: i for i, label in enumerate(labels)}
 
-    # Create label mapping
-    label_map = {label: i for i, label in enumerate(unique_labels)}
+    labels_numeric_train = [label_map[label] for label in y_train]
+    labels_numeric_val = [label_map[label] for label in y_val]
 
-    # Convert multi-label format to single-label format for training data
-    y_train_single = [label_map[label] for label in y_train_flat]
+    tokenizer = RobertaTokenizer.from_pretrained("roberta-base")
+    train_encodings = tokenizer(X_train, truncation=True, padding=True)
+    val_encodings = tokenizer(X_val, truncation=True, padding=True)
 
-    # Convert multi-label format to single-label format for validation data
-    y_val_single = [label_map[label] for label in y_val_flat]
+    train_features = []
+    for i in range(len(X_train)):
+        train_features.append(InputFeatures(input_ids=train_encodings['input_ids'][i],
+                                      attention_mask=train_encodings['attention_mask'][i],
+                                      label=labels_numeric_train[i]))
 
-    # Tokenize training and validation data
-    encodings_train = tokenizer(X_train, truncation=True, padding=True)
-    encodings_val = tokenizer(X_val, truncation=True, padding=True)
+    val_features = []
+    for i in range(len(X_val)):
+        val_features.append(InputFeatures(input_ids=val_encodings['input_ids'][i],
+                                            attention_mask=val_encodings['attention_mask'][i],
+                                            label=labels_numeric_val[i]))
 
-    # Create PyTorch datasets
     train_dataset = torch.utils.data.TensorDataset(
-        torch.tensor(encodings_train['input_ids']),
-        torch.tensor(encodings_train['attention_mask']),
-        torch.tensor(y_train_single, dtype=torch.long)  # Ensure labels are of type long
+        torch.tensor([f.input_ids for f in train_features]),
+        torch.tensor([f.attention_mask for f in train_features]),
+        torch.tensor([f.label for f in train_features])
     )
-
     val_dataset = torch.utils.data.TensorDataset(
-        torch.tensor(encodings_val['input_ids']),
-        torch.tensor(encodings_val['attention_mask']),
-        torch.tensor(y_val_single, dtype=torch.long)  # Ensure labels are of type long
+        torch.tensor([f.input_ids for f in val_features]),
+        torch.tensor([f.attention_mask for f in val_features]),
+        torch.tensor([f.label for f in val_features])
     )
-
     return train_dataset, val_dataset, tokenizer, label_map
 
 
-def prepare_dataset(X, y, tokenizer, mlb=None, max_label_length=17):
-    encodings = tokenizer(X, truncation=True, padding=True)
-    if mlb:
-        labels = mlb.inverse_transform(y)
-        print(labels)
-    else:
-        labels = y
-        print(labels)
-
-    encoded_labels = []
-    for label_list in labels:
-        encoded_label = tokenizer.encode(", ".join(label_list), add_special_tokens=False)
-        # Pad or truncate the encoded label to ensure consistent length
-        encoded_label = encoded_label[:max_label_length] + [tokenizer.pad_token_id] * (max_label_length - len(encoded_label))
-        encoded_labels.append(encoded_label)
-
-    dataset = torch.utils.data.TensorDataset(
-        torch.tensor(encodings['input_ids']),
-        torch.tensor(encodings['attention_mask']),
-        torch.tensor(encoded_labels, dtype=torch.long)  # Ensure labels are of type long
-    )
-
-    return dataset
-
-
-
 def train_model(model, train_dataset, val_dataset, training_args):
-    data_collator = CustomDataCollator()
-
+    data_collator = CustomDataCollator(tokenizer)
     trainer = Trainer(
         model=model,
         args=training_args,
@@ -109,41 +77,30 @@ def train_model(model, train_dataset, val_dataset, training_args):
         eval_dataset=val_dataset,
         data_collator=data_collator
     )
-
     trainer.train()
-
     return trainer
 
-
 def evaluate_model(trainer, val_dataset, all_labels, label_map):
+    all_labels = list(all_labels)
     print("Type of trainer:", type(trainer))
     print("Type of val_dataset:", type(val_dataset))
     # Generate predictions using the trained model
     predictions = trainer.predict(val_dataset)
     print("Type of predictions:", type(predictions))
-
     # Extract predicted labels from the predictions
     predicted_labels_numeric = predictions.predictions.argmax(axis=1)
     print("Type of predicted_labels_numeric:", type(predicted_labels_numeric))
-
     # Convert predicted numeric labels to their corresponding string labels
     predicted_labels = [all_labels[label] for label in predicted_labels_numeric]
     print("Type of predicted_labels:", type(predicted_labels))
-
     # Extract actual labels from the validation dataset
     actual_labels = [all_labels[label] for label in val_dataset.tensors[2].tolist()]
-
     # Convert actual labels to their corresponding numeric labels using label map
     actual_labels_numeric = [label_map[label] for label in actual_labels]
-
     # Calculate accuracy using actual and predicted labels
     accuracy = accuracy_score(actual_labels_numeric, predicted_labels_numeric)
-
     # Return accuracy and other evaluation metrics
     return accuracy, actual_labels, predicted_labels, actual_labels_numeric
-
-
-
 
 
 if __name__ == "__main__":
@@ -158,20 +115,20 @@ if __name__ == "__main__":
     all_labels = load_data('unique_labels.pkl')
     print('The unique labels are:', all_labels)
 
-    X_train = X_train[:10]
+    X_train = X_train[:1000]
     print('X_train:', X_train)
-    y_train = y_train[:10]
+    y_train = y_train[:1000]
     print('y_train:', y_train)
-    X_dev = X_dev[:10]
-    y_dev = y_dev[:10]
+    X_dev = X_dev[:100]
+    y_dev = y_dev[:100]
     # print(texts)
     # print(labels)
 
-    tokenizer = RobertaTokenizer.from_pretrained("roberta-base")
+    # tokenizer = RobertaTokenizer.from_pretrained("roberta-base")
 
-    # train_dataset, val_dataset, tokenizer, label_map = prepare_datasets(X_train, y_train, X_dev, y_dev, tokenizer, all_labels)
-    train_dataset = prepare_dataset(X_train, y_train, tokenizer, mlb)
-    val_dataset = prepare_dataset(X_dev, y_dev, tokenizer, mlb)
+    train_dataset, val_dataset, tokenizer, label_map = prepare_datasets(X_train, y_train, X_dev, y_dev, all_labels)
+    # train_dataset = prepare_dataset(X_train, y_train, tokenizer, mlb)
+    # val_dataset = prepare_dataset(X_dev, y_dev, tokenizer, mlb)
 
     # all_labels = list(set(labels))
 
