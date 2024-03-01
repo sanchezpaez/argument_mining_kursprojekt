@@ -314,16 +314,14 @@ def load_data(filename: any) -> any:
     return output
 
 
-def encode_and_split_data(texts, labels, test_size=0.2, dev_size=0.1, random_state=42):
+def encode_and_split_data(texts, labels, dev_size=0.1, test_size=0.1, random_state=42):
     # Encode labels for multilabel classification
     mlb = MultiLabelBinarizer()
     encoded_labels = mlb.fit_transform(labels)
 
-    # Split the dataset into training and testing sets
-    X_train, X_test, y_train, y_test = train_test_split(texts, encoded_labels, test_size=test_size, random_state=random_state)
-
-    # Split the training set further into training and development sets
-    X_train, X_dev, y_train, y_dev = train_test_split(X_train, y_train, test_size=dev_size/(1-test_size), random_state=random_state)
+    # Split the dataset into training, development, and testing sets
+    X_train, X_temp, y_train, y_temp = train_test_split(texts, encoded_labels, test_size=(dev_size + test_size), random_state=random_state)
+    X_dev, X_test, y_dev, y_test = train_test_split(X_temp, y_temp, test_size=test_size/(dev_size + test_size), random_state=random_state)
 
     return X_train, X_dev, X_test, y_train, y_dev, y_test, mlb
 
@@ -452,19 +450,19 @@ if __name__ == '__main__':
     articles_df, claims_n_premises_df = transform_files_to_dataframes('merged_output.txt', 'all_sorted_annotated_texts.txt')
 
     # Get and preprocess labelled texts
-    # texts, labels = get_labelled_sentences_from_data(articles_df, claims_n_premises_df)
-    # print(f"There are {len(texts)} texts") # 12570
-    # print(f"There are {len(labels)} labels")
-    # save_data(texts, 'texts.pkl')
-    # save_data(labels, 'labels.pkl')
+    texts, labels = get_labelled_sentences_from_data(articles_df, claims_n_premises_df)
+    print(f"There are {len(texts)} texts") # 12570
+    print(f"There are {len(labels)} labels")
+    save_data(texts, 'texts.pkl')
+    save_data(labels, 'labels.pkl')
 
-    preprocessed_texts, preprocessed_labels = get_labelled_sentences_from_data(articles_df, claims_n_premises_df, preprocess=True)
-    print(f"There are {len(preprocessed_texts)} preprocessed texts") # 9712 after empty texts removed
-    print(f"There are {len(preprocessed_labels)} preprocessed labels")
-    save_data(preprocessed_texts, 'preprocessed_texts.pkl')
-    save_data(preprocessed_labels, 'preprocessed_labels.pkl')
-    labels = preprocessed_labels
-    texts = preprocessed_texts
+    # preprocessed_texts, preprocessed_labels = get_labelled_sentences_from_data(articles_df, claims_n_premises_df, preprocess=True)
+    # print(f"There are {len(preprocessed_texts)} preprocessed texts") # 9712 after empty texts removed
+    # print(f"There are {len(preprocessed_labels)} preprocessed labels")
+    # save_data(preprocessed_texts, 'preprocessed_texts.pkl')
+    # save_data(preprocessed_labels, 'preprocessed_labels.pkl')
+    # labels = preprocessed_labels
+    # texts = preprocessed_texts
 
     # Get unique labels
     unique_labels = set(labels)
@@ -477,6 +475,12 @@ if __name__ == '__main__':
     print(len(y_train))
     print(len(X_dev))
     print(len(y_dev))
+    print(len(X_test))
+    print(len(y_test))
+
+    print(X_test)
+    print(y_test)
+
 
     # With features claculated within matrix function
     X_train_term_doc_matrix, y_train, X_dev_term_doc_matrix, y_dev = create_term_document_matrix(X_train, y_train, X_dev, y_dev, include_additional_features=True)
@@ -495,7 +499,7 @@ if __name__ == '__main__':
     # Evaluate the classifier
     accuracy = accuracy_score(y_dev, y_dev_pred)
     print("Development Set Accuracy:", accuracy)  # 0.4789180588703262 no features, 0.48369132856006364 2 features, 0.4813046937151949 3 features
-    # After removing empty texts: 0.36728395061728397 no features
+    # After removing empty texts: 0.36728395061728397 no features, 0.44709626093874305 features
     report = generate_classification_report(y_dev, y_dev_pred, unique_labels)
 
 

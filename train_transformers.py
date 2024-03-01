@@ -127,8 +127,8 @@ if __name__ == "__main__":
     # all_labels = ["positive", "negative", "neutral", "mixed"]
     texts = load_data('texts.pkl')
     labels = load_data('labels.pkl')
-    texts = texts[:1000]
-    labels = labels[:1000]
+    # texts = texts[:3000]
+    # labels = labels[:3000]
     # print(texts)
     # print(labels)
 
@@ -153,6 +153,7 @@ if __name__ == "__main__":
     accuracy, actual_labels, predicted_labels, actual_labels_numeric = evaluate_model(trainer, val_dataset, all_labels,
                                                                                       label_map)
     print("Accuracy:", accuracy)  # For the first 100 Accuracy: 0.65 no features
+    # 1000 acc 0.695
 
     unique_labels = set(actual_labels)
     num_classes = len(all_labels)
