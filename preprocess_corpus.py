@@ -162,7 +162,7 @@ def read_annotations(annotations_file):
 
 
 def merge_txt_files(directory):
-    output_file = "merged_output.txt"
+    output_file = ALL_ARTICLES
 
     # Get a sorted list of filenames in the directory
     sorted_filenames = sorted(os.listdir(directory))
