@@ -40,7 +40,7 @@ ROOT = Path(__file__).parent.resolve()
 CORPUS = Path(f"{ROOT}/corpus/")
 ALL_ARTICLES = Path(f"{ROOT}/all_articles.txt")
 SEMANTIC_TYPES = Path(f"{ROOT}/essays_semantic_types.tsv")
-ALL_ANNOTATIONS = Path(f"{ROOT}/all_sorted_annotated_texts")
+ALL_ANNOTATIONS = Path(f"{ROOT}/all_sorted_annotated_texts.txt")
 
 
 def concatenate_txt_files(directory, output_file):
@@ -444,10 +444,10 @@ def load_matrices():
 
 
 if __name__ == '__main__':
-    concatenate_txt_files(CORPUS, ALL_ARTICLES)
-    process_annotations(SEMANTIC_TYPES, 'all_sorted_annotated_texts.txt', CORPUS)
-    merge_txt_files(CORPUS)  # Returns 'merged_output.txt'
-    articles_df, claims_n_premises_df = transform_files_to_dataframes('merged_output.txt', 'all_sorted_annotated_texts.txt')
+    # concatenate_txt_files(CORPUS, ALL_ARTICLES)
+    process_annotations(SEMANTIC_TYPES, ALL_ANNOTATIONS, CORPUS)
+    merge_txt_files(CORPUS)  # Returns 'all_articles.txt'
+    articles_df, claims_n_premises_df = transform_files_to_dataframes(ALL_ARTICLES, ALL_ANNOTATIONS)
 
     # Get and preprocess labelled texts
     texts, labels = get_labelled_sentences_from_data(articles_df, claims_n_premises_df)
@@ -499,7 +499,7 @@ if __name__ == '__main__':
     # Evaluate the classifier
     accuracy = accuracy_score(y_dev, y_dev_pred)
     print("Development Set Accuracy:", accuracy)  # 0.4789180588703262 no features, 0.48369132856006364 2 features, 0.4813046937151949 3 features
-    # After removing empty texts: 0.36728395061728397 no features, 0.44709626093874305 features
+    # After removing empty texts: 0.36728395061728397 no features, 0.45823389021479716 features
     report = generate_classification_report(y_dev, y_dev_pred, unique_labels)
 
 
