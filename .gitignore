@@ -17,6 +17,12 @@ X_train.pkl
 X_dev.pkl
 y_train.pkl
 y_dev.pkl
+X_train_matrix.pkl
+y_train_matrix.pkl
+X_dev_matrix.pkl
+y_dev_matrix.pkl
+X_test_matrix.pkl
+y_test_matrix.pkl
 experiments.py
 
 preprocessed_texts.pkl

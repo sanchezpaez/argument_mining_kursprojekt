@@ -33,21 +33,25 @@ class InputFeatures:
         self.label = label
 
 
-def prepare_datasets(texts, labels, test_size=0.2, random_state=42):
-    unique_labels = set(labels)
+def prepare_datasets(X_train, y_train, X_val, y_val, tokenizer, unique_labels):
     label_map = {label: i for i, label in enumerate(unique_labels)}
-    labels_numeric = [label_map[label] for label in labels]
+    labels_numeric_train = [label_map[label] for label in y_train]
+    labels_numeric_val = [label_map[label] for label in y_val]
 
-    tokenizer = RobertaTokenizer.from_pretrained("roberta-base")
-    encodings = tokenizer(texts, truncation=True, padding=True)
+    encodings_train = tokenizer(X_train, truncation=True, padding=True)
+    encodings_val = tokenizer(X_val, truncation=True, padding=True)
 
-    features = []
-    for i in range(len(texts)):
-        features.append(InputFeatures(input_ids=encodings['input_ids'][i],
-                                      attention_mask=encodings['attention_mask'][i],
-                                      label=labels_numeric[i]))
+    train_features = []
+    for i in range(len(X_train)):
+        train_features.append(InputFeatures(input_ids=encodings_train['input_ids'][i],
+                                      attention_mask=encodings_train['attention_mask'][i],
+                                      label=labels_numeric_train[i]))
 
-    train_features, val_features = train_test_split(features, test_size=test_size, random_state=random_state)
+    val_features = []
+    for i in range(len(X_val)):
+        val_features.append(InputFeatures(input_ids=encodings_val['input_ids'][i],
+                                            attention_mask=encodings_val['attention_mask'][i],
+                                            label=labels_numeric_val[i]))
 
     train_dataset = torch.utils.data.TensorDataset(
         torch.tensor([f.input_ids for f in train_features]),
@@ -112,29 +116,29 @@ def evaluate_model(trainer, val_dataset, all_labels, label_map):
 
 
 if __name__ == "__main__":
-    # texts = [
-    #     "This is a positive review.",
-    #     "This is a negative review.",
-    #     "This is a neutral review.",
-    #     "This is a mixed review."
-    # ]
-    # labels = [
-    #     "positive",
-    #     "negative",
-    #     "neutral",
-    #     "mixed"
-    # ]
-    # all_labels = ["positive", "negative", "neutral", "mixed"]
-    texts = load_data('texts.pkl')
-    labels = load_data('labels.pkl')
-    # texts = texts[:3000]
-    # labels = labels[:3000]
+    X_train = load_data('X_train.pkl')
+    y_train = load_data('y_train.pkl')
+    X_dev = load_data('X_dev.pkl')
+    y_dev = load_data('y_dev.pkl')
+    X_test = load_data('X_test.pkl')
+    y_test = load_data('y_test.pkl')
+    mlb = load_data('mlb.pkl')
+    all_labels = load_data('unique_labels.pkl')
+
+    X_train = X_train[:10]
+    # print(X_train)
+    y_train = y_train[:10]
+    X_dev = X_dev[:10]
+    y_dev = y_dev[:10]
     # print(texts)
     # print(labels)
 
-    train_dataset, val_dataset, tokenizer, label_map = prepare_datasets(texts, labels)
+    tokenizer = RobertaTokenizer.from_pretrained("roberta-base")
 
-    all_labels = list(set(labels))
+    train_dataset, val_dataset, tokenizer, label_map = prepare_datasets(X_train, y_train, X_dev, y_dev, tokenizer, all_labels)
+    print(all_labels)
+
+    # all_labels = list(set(labels))
 
     model = RobertaForSequenceClassification.from_pretrained("roberta-base", num_labels=len(all_labels))
 
@@ -152,11 +156,13 @@ if __name__ == "__main__":
 
     accuracy, actual_labels, predicted_labels, actual_labels_numeric = evaluate_model(trainer, val_dataset, all_labels,
                                                                                       label_map)
+    unique_labels = set(actual_labels)
+    num_classes = len(unique_labels)
+
     print("Accuracy:", accuracy)  # For the first 100 Accuracy: 0.65 no features
     # 1000 acc 0.695
 
-    unique_labels = set(actual_labels)
-    num_classes = len(all_labels)
+
 
     if len(unique_labels) != num_classes:
         print("Number of unique labels:", len(unique_labels))

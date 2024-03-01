@@ -318,6 +318,7 @@ def encode_and_split_data(texts, labels, dev_size=0.1, test_size=0.1, random_sta
     # Encode labels for multilabel classification
     mlb = MultiLabelBinarizer()
     encoded_labels = mlb.fit_transform(labels)
+    # print(mlb.classes_)
 
     # Split the dataset into training, development, and testing sets
     X_train, X_temp, y_train, y_temp = train_test_split(texts, encoded_labels, test_size=(dev_size + test_size), random_state=random_state)
@@ -428,10 +429,10 @@ def create_term_document_matrix(X_train, y_train, X_dev, y_dev, include_addition
 
 
 def save_matrices(X_train_matrix, y_train, X_dev_matrix, y_dev):
-    save_data(X_train_matrix, 'X_train.pkl')
-    save_data(X_dev_matrix, 'X_dev.pkl')
-    save_data(y_train, 'y_train.pkl')
-    save_data(y_dev, 'y_dev.pkl')
+    save_data(X_train_matrix, 'X_train_matrix.pkl')
+    save_data(X_dev_matrix, 'X_dev_matrix.pkl')
+    save_data(y_train, 'y_train_matrix.pkl')
+    save_data(y_dev, 'y_dev_matrix.pkl')
 
 
 def load_matrices():
@@ -450,11 +451,11 @@ if __name__ == '__main__':
     articles_df, claims_n_premises_df = transform_files_to_dataframes(ALL_ARTICLES, ALL_ANNOTATIONS)
 
     # Get and preprocess labelled texts
-    texts, labels = get_labelled_sentences_from_data(articles_df, claims_n_premises_df)
+    texts, labels = get_labelled_sentences_from_data(articles_df, claims_n_premises_df) # NO PREPROCESS IF WE SAVE DATA FOR ROBERTA!!
     print(f"There are {len(texts)} texts") # 12570
     print(f"There are {len(labels)} labels")
-    save_data(texts, 'texts.pkl')
-    save_data(labels, 'labels.pkl')
+    # save_data(texts, 'texts.pkl')
+    # save_data(labels, 'labels.pkl')
 
     # preprocessed_texts, preprocessed_labels = get_labelled_sentences_from_data(articles_df, claims_n_premises_df, preprocess=True)
     # print(f"There are {len(preprocessed_texts)} preprocessed texts") # 9712 after empty texts removed
@@ -466,21 +467,26 @@ if __name__ == '__main__':
 
     # Get unique labels
     unique_labels = set(labels)
+    save_data(unique_labels, 'unique_labels.pkl')
     num_classes = len(unique_labels)
-    print(f"The number of classes is {num_classes}")
+    print(f"The number of classes is {num_classes}")  # 10
 
     # Encode and split the data
     X_train, X_dev, X_test, y_train, y_dev, y_test, mlb = encode_and_split_data(texts, labels)
-    print(len(X_train))
-    print(len(y_train))
-    print(len(X_dev))
-    print(len(y_dev))
-    print(len(X_test))
-    print(len(y_test))
-
-    print(X_test)
-    print(y_test)
-
+    print(len(X_train))  # 10056
+    print(len(y_train))  # 10056
+    print(len(X_dev))  # 1257
+    print(len(y_dev))  # 1257
+    print(len(X_test))  # 1257
+    print(len(y_test))  # 1257
+    # print(X_train)
+    save_data(X_train, 'X_train.pkl')
+    save_data(y_train, 'y_train.pkl')
+    save_data(X_dev, 'X_dev.pkl')
+    save_data(y_dev, 'y_dev.pkl')
+    save_data(X_test, 'X_test.pkl')
+    save_data(y_test, 'y_test.pkl')
+    save_data(mlb, 'mlb.pkl')
 
     # With features claculated within matrix function
     X_train_term_doc_matrix, y_train, X_dev_term_doc_matrix, y_dev = create_term_document_matrix(X_train, y_train, X_dev, y_dev, include_additional_features=True)
@@ -500,6 +506,7 @@ if __name__ == '__main__':
     accuracy = accuracy_score(y_dev, y_dev_pred)
     print("Development Set Accuracy:", accuracy)  # 0.4789180588703262 no features, 0.48369132856006364 2 features, 0.4813046937151949 3 features
     # After removing empty texts: 0.36728395061728397 no features, 0.45823389021479716 features
+    # No preprocess yes features: 0.4606205250596659
     report = generate_classification_report(y_dev, y_dev_pred, unique_labels)
 
 
