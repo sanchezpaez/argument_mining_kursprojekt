@@ -314,17 +314,64 @@ def load_data(filename: any) -> any:
     return output
 
 
-def encode_and_split_data(texts, labels, dev_size=0.1, test_size=0.1, random_state=42):
-    # Encode labels for multilabel classification
-    mlb = MultiLabelBinarizer()
-    encoded_labels = mlb.fit_transform(labels)
-    # print(mlb.classes_)
+# def encode_and_split_data(texts, labels, dev_size=0.1, test_size=0.1, random_state=42):
+#     # Encode labels for multilabel classification
+#     mlb = MultiLabelBinarizer()
+#     encoded_labels = mlb.fit_transform(labels)
+#     # print(mlb.classes_)
+#
+#     # Split the dataset into training, development, and testing sets
+#     X_train, X_temp, y_train, y_temp = train_test_split(texts, encoded_labels, test_size=(dev_size + test_size), random_state=random_state)
+#     X_dev, X_test, y_dev, y_test = train_test_split(X_temp, y_temp, test_size=test_size/(dev_size + test_size), random_state=random_state)
+#
+#     return X_train, X_dev, X_test, y_train, y_dev, y_test, mlb
 
+def split_data(texts, labels, dev_size=0.1, test_size=0.1, random_state=42):
     # Split the dataset into training, development, and testing sets
-    X_train, X_temp, y_train, y_temp = train_test_split(texts, encoded_labels, test_size=(dev_size + test_size), random_state=random_state)
+    X_train, X_temp, y_train, y_temp = train_test_split(texts, labels, test_size=(dev_size + test_size), random_state=random_state)
     X_dev, X_test, y_dev, y_test = train_test_split(X_temp, y_temp, test_size=test_size/(dev_size + test_size), random_state=random_state)
 
-    return X_train, X_dev, X_test, y_train, y_dev, y_test, mlb
+    return X_train, X_dev, X_test, y_train, y_dev, y_test
+
+def encode_data(y_train, y_dev, y_test):
+    # Encode labels for multilabel classification
+    mlb = MultiLabelBinarizer()
+    encoded_labels_train = mlb.fit_transform(y_train)
+    encoded_labels_dev = mlb.transform(y_dev)
+    encoded_labels_test = mlb.transform(y_test)
+    # print(mlb.classes_)
+
+    # # Tokenize training, development, and testing sets
+    # encodings_train = tokenizer(X_train, truncation=True, padding=True)
+    # encodings_dev = tokenizer(X_dev, truncation=True, padding=True)
+    # encodings_test = tokenizer(X_test, truncation=True, padding=True)
+    #
+    # # Convert encoded labels to PyTorch tensors
+    # y_train_tensor = torch.tensor(encoded_labels_train, dtype=torch.long)
+    # y_dev_tensor = torch.tensor(encoded_labels_dev, dtype=torch.long)
+    # y_test_tensor = torch.tensor(encoded_labels_test, dtype=torch.long)
+    #
+    # # Create PyTorch datasets
+    # train_dataset = torch.utils.data.TensorDataset(
+    #     torch.tensor(encodings_train['input_ids']),
+    #     torch.tensor(encodings_train['attention_mask']),
+    #     y_train_tensor
+    # )
+    #
+    # dev_dataset = torch.utils.data.TensorDataset(
+    #     torch.tensor(encodings_dev['input_ids']),
+    #     torch.tensor(encodings_dev['attention_mask']),
+    #     y_dev_tensor
+    # )
+    #
+    # test_dataset = torch.utils.data.TensorDataset(
+    #     torch.tensor(encodings_test['input_ids']),
+    #     torch.tensor(encodings_test['attention_mask']),
+    #     y_test_tensor
+    # )
+
+    return encoded_labels_train, encoded_labels_dev, encoded_labels_test, mlb
+
 
 
 def create_term_document_matrix(X_train, y_train, X_dev, y_dev, include_additional_features=False):
@@ -472,7 +519,10 @@ if __name__ == '__main__':
     print(f"The number of classes is {num_classes}")  # 10
 
     # Encode and split the data
-    X_train, X_dev, X_test, y_train, y_dev, y_test, mlb = encode_and_split_data(texts, labels)
+    # X_train, X_dev, X_test, y_train, y_dev, y_test, mlb = encode_and_split_data(texts, labels)
+    X_train, X_dev, X_test, y_train, y_dev, y_test = split_data(texts, labels)
+    encoded_y_train, encoded_y_dev, encoded_y_test, mlb = encode_data(y_train, y_dev, y_test)
+
     print(len(X_train))  # 10056
     print(len(y_train))  # 10056
     print(len(X_dev))  # 1257
@@ -486,10 +536,10 @@ if __name__ == '__main__':
     save_data(y_dev, 'y_dev.pkl')
     save_data(X_test, 'X_test.pkl')
     save_data(y_test, 'y_test.pkl')
-    save_data(mlb, 'mlb.pkl')
+    # save_data(mlb, 'mlb.pkl')
 
     # With features claculated within matrix function
-    X_train_term_doc_matrix, y_train, X_dev_term_doc_matrix, y_dev = create_term_document_matrix(X_train, y_train, X_dev, y_dev, include_additional_features=True)
+    X_train_term_doc_matrix, y_train, X_dev_term_doc_matrix, y_dev = create_term_document_matrix(X_train, encoded_y_train, X_dev, encoded_y_dev, include_additional_features=True)
     save_matrices(X_train_term_doc_matrix, y_train, X_dev_term_doc_matrix, y_dev)
     # X_train_term_doc_matrix, y_train, X_dev_term_doc_matrix, y_dev = load_matrices()
 
