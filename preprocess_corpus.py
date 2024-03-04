@@ -240,6 +240,21 @@ def split_data(texts, labels, dev_size=0.1, test_size=0.1, random_state=42):
     X_train, X_temp, y_train, y_temp = train_test_split(texts, labels, test_size=(dev_size + test_size), random_state=random_state)
     X_dev, X_test, y_dev, y_test = train_test_split(X_temp, y_temp, test_size=test_size/(dev_size + test_size), random_state=random_state)
 
+    print('Number of items in X_train:', len(X_train))  # 10056
+    print('Number of items in y_train:', len(y_train))  # 10056
+    print('Number of items in X_dev:', len(X_dev))  # 1257
+    print('Number of items in y_dev:', len(y_dev))  # 1257
+    print('Number of items in X_test:', len(X_test))  # 1257
+    print('Number of items in y_test:', len(y_test))  # 1257
+
+    save_data(X_train, 'X_train.pkl')
+    save_data(y_train, 'y_train.pkl')
+    save_data(X_dev, 'X_dev.pkl')
+    save_data(y_dev, 'y_dev.pkl')
+    save_data(X_test, 'X_test.pkl')
+    save_data(y_test, 'y_test.pkl')
+    # save_data(mlb, 'mlb.pkl')
+
     return X_train, X_dev, X_test, y_train, y_dev, y_test
 
 
@@ -340,6 +355,7 @@ def create_term_document_matrix(X_train, y_train, X_dev, y_dev, include_addition
 
         # 3) DEPENDENCIES
         # Extract dependency features for the corpus
+        print('Extracting dependency features...')
         dependency_matrix_train = extract_dependency_features_for_corpus(X_train)
         print("dependency_matrix_train shape:", dependency_matrix_train.shape)
         # Filter out empty lists and ensure all lists have consistent length
@@ -429,8 +445,41 @@ def get_texts_and_labels(dataframe_articles, dataframe_arguments, preprocess=Fal
         labels = preprocessed_labels
         texts = preprocessed_texts
 
-    return texts, labels
+    unique_labels = get_unique_labels(labels)
 
+    return texts, labels, unique_labels
+
+
+def get_unique_labels(labels):
+    unique_labels = set(labels)
+    save_data(unique_labels, 'unique_labels.pkl')
+    num_classes = len(unique_labels)
+    print('Number of classes:', num_classes)  # 10
+
+    return unique_labels
+
+
+def train_baseline(classifier, X_train_term_doc_matrix, y_train, X_dev_term_doc_matrix):
+    # Train the classifier
+    classifier.fit(X_train_term_doc_matrix, y_train)
+    sleep(2)
+    # Predict on the development set
+    y_dev_pred = classifier.predict(X_dev_term_doc_matrix)
+    sleep(2)
+
+    return y_dev_pred
+
+
+def evaluate_baseline(y_val, y_val_predictions, all_labels):
+    accuracy = accuracy_score(y_val, y_val_predictions)
+    print("Development Set Accuracy:", accuracy)  # 0.4789180588703262 no features, 0.48369132856006364 2 features, 0.4813046937151949 3 features
+    # After removing empty texts: 0.36728395061728397 no features, 0.45823389021479716 features
+    # No preprocess yes features: 0.4606205250596659, 0.4598249801113763 dev set
+    # No preprocess no features: 0.4606205250596659, 0.4598249801113763 dev set
+
+    report = generate_classification_report(y_val, y_val_predictions, all_labels)
+
+    return accuracy, report
 
 
 if __name__ == '__main__':
@@ -441,61 +490,28 @@ if __name__ == '__main__':
     )
 
     # Get and preprocess labelled texts
-    texts, labels = get_texts_and_labels(articles_df, claims_n_premises_df)  # NO PREPROCESS IF WE SAVE DATA FOR ROBERTA!!
+    texts, labels, unique_labels = get_texts_and_labels(articles_df, claims_n_premises_df)  # NO PREPROCESS IF WE SAVE DATA FOR ROBERTA!!
     # OR
-    # preprocessed_texts, preprocessed_labels = get_labelled_sentences_from_data(articles_df, claims_n_premises_df, preprocess=True)
-    # print(f"There are {len(preprocessed_texts)} preprocessed texts") # 9712 after empty texts removed
-    # print(f"There are {len(preprocessed_labels)} preprocessed labels")
-    # save_data(preprocessed_texts, 'preprocessed_texts.pkl')
-    # save_data(preprocessed_labels, 'preprocessed_labels.pkl')
-    # labels = preprocessed_labels
-    # texts = preprocessed_texts
-
-    # Get unique labels
-    unique_labels = set(labels)
-    save_data(unique_labels, 'unique_labels.pkl')
-    num_classes = len(unique_labels)
-    print(f"The number of classes is {num_classes}")  # 10
+    # texts, labels, unique_labels = get_texts_and_labels(articles_df, claims_n_premises_df, preprocess=True)
 
     # Encode and split the data
     X_train, X_dev, X_test, y_train, y_dev, y_test = split_data(texts, labels)
     encoded_y_train, encoded_y_dev, encoded_y_test, mlb = encode_data(y_train, y_dev, y_test)
 
-    print(len(X_train))  # 10056
-    print(len(y_train))  # 10056
-    print(len(X_dev))  # 1257
-    print(len(y_dev))  # 1257
-    print(len(X_test))  # 1257
-    print(len(y_test))  # 1257
-    # print(X_train)
-    save_data(X_train, 'X_train.pkl')
-    save_data(y_train, 'y_train.pkl')
-    save_data(X_dev, 'X_dev.pkl')
-    save_data(y_dev, 'y_dev.pkl')
-    save_data(X_test, 'X_test.pkl')
-    save_data(y_test, 'y_test.pkl')
-    # save_data(mlb, 'mlb.pkl')
-
-    # With features claculated within matrix function
-    X_train_term_doc_matrix, y_train, X_dev_term_doc_matrix, y_dev = create_term_document_matrix(X_train, encoded_y_train, X_dev, encoded_y_dev, include_additional_features=True)
+    # Fit data/Extract features
+    X_train_term_doc_matrix, y_train, X_dev_term_doc_matrix, y_dev = create_term_document_matrix(X_train, encoded_y_train, X_dev, encoded_y_dev)
     save_matrices(X_train_term_doc_matrix, y_train, X_dev_term_doc_matrix, y_dev)
     # X_train_term_doc_matrix, y_train, X_dev_term_doc_matrix, y_dev = load_matrices()
 
+    # Train & Classify
+
     # Initialize the RandomForestClassifier
     classifier = RandomForestClassifier()
-    sleep(2)
-    # Train the classifier
-    classifier.fit(X_train_term_doc_matrix, y_train)
-    sleep(2)
-    # Predict on the development set
-    y_dev_pred = classifier.predict(X_dev_term_doc_matrix)
-    sleep(2)
+    y_dev_pred = train_baseline(classifier, X_train_term_doc_matrix, y_train, X_dev_term_doc_matrix)
+
     # Evaluate the classifier
-    accuracy = accuracy_score(y_dev, y_dev_pred)
-    print("Development Set Accuracy:", accuracy)  # 0.4789180588703262 no features, 0.48369132856006364 2 features, 0.4813046937151949 3 features
-    # After removing empty texts: 0.36728395061728397 no features, 0.45823389021479716 features
-    # No preprocess yes features: 0.4606205250596659
-    report = generate_classification_report(y_dev, y_dev_pred, unique_labels)
+    accuracy_score, classification_report = evaluate_baseline(y_dev, y_dev_pred, unique_labels)
+
 
 
 
