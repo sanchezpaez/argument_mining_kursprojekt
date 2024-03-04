@@ -1,13 +1,10 @@
-import numpy as np
 import torch
-from sklearn.metrics import accuracy_score, classification_report
-from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score
 from transformers import RobertaForSequenceClassification, Trainer, TrainingArguments
 from transformers import RobertaTokenizer
-from sklearn.preprocessing import MultiLabelBinarizer
 
-from evaluate import generate_classification_report
 from classify_rfc import load_data
+from evaluate import generate_classification_report
 
 
 class CustomDataCollator(torch.utils.data.DataLoader):
@@ -52,8 +49,6 @@ def recover_data():
     print('The unique labels are:', unique_labels)
 
     return X_train, y_train, X_dev, y_dev, X_test, y_test, unique_labels
-
-
 
 
 def prepare_datasets(X_train, y_train, X_val, y_val, labels):
@@ -175,43 +170,9 @@ if __name__ == "__main__":
     X_dev = X_dev[:100]
     y_dev = y_dev[:100]
 
-
     # DEV SET
-
     train_dataset, val_dataset, tokenizer, label_map = prepare_datasets(X_train, y_train, X_dev, y_dev, all_labels)
     train_and_evaluate(all_labels, train_dataset, val_dataset, label_map)
-
-    # model = RobertaForSequenceClassification.from_pretrained("roberta-base", num_labels=len(all_labels))
-    #
-    # training_args = TrainingArguments(
-    #     output_dir="./results",
-    #     num_train_epochs=3,
-    #     per_device_train_batch_size=8,
-    #     per_device_eval_batch_size=8,
-    #     warmup_steps=500,
-    #     weight_decay=0.01,
-    #     logging_dir="./logs",
-    # )
-    #
-    # trainer = train_model(model, train_dataset, val_dataset, training_args)
-    #
-    # accuracy, actual_labels, predicted_labels, actual_labels_numeric = evaluate_model(trainer, val_dataset, all_labels,
-    #                                                                                   label_map)
-    # unique_labels = set(actual_labels)
-    # num_classes = len(unique_labels)
-    #
-    # print("Accuracy:", accuracy)  # For the first 100 Accuracy: 0.65 no features
-    # # 1000 acc 0.695
-    #
-    # if len(unique_labels) != num_classes:
-    #     print("Number of unique labels:", len(unique_labels))
-    #     print("Expected number of classes:", num_classes)
-    #     print("Actual labels:", unique_labels)
-    #     print("Predicted labels:", predicted_labels)
-    #     print("All labels:", all_labels)
-    #
-    # report = generate_classification_report(actual_labels_numeric, [label_map[label] for label in predicted_labels],
-    #                                         all_labels)
 
     # TEST SET
     train_dataset, test_dataset, tokenizer, label_map = prepare_datasets(X_train, y_train, X_test, y_test, all_labels)

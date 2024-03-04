@@ -1,35 +1,14 @@
 # Sandra Sánchez Páez
 # ArgMin Modulprojekt
+import pickle
 from time import sleep
 
-import torch
-from transformers import RobertaTokenizer, RobertaForSequenceClassification
-from transformers import Trainer, TrainingArguments
-from sklearn.model_selection import train_test_split
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import MultiLabelBinarizer, LabelEncoder
-from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 import numpy as np
-import os
-import pickle
-from pathlib import Path
-import re
-import nltk
-from nltk.corpus import stopwords
-from nltk.tokenize import word_tokenize
-from nltk.stem import PorterStemmer
-from nltk.stem import WordNetLemmatizer
-import string
-from tokenize import tokenize
-import pandas as pd
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import classification_report
-from sklearn.model_selection import train_test_split
-from tqdm import tqdm
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics import accuracy_score
-from transformers import RobertaForSequenceClassification
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import MultiLabelBinarizer
 
 from evaluate import generate_classification_report
 from features import check_claim_verbs, extract_dependency_features_for_corpus, extract_ngram_features_for_corpus, \
@@ -85,7 +64,6 @@ def encode_data(y_train, y_dev, y_test):
     encoded_labels_dev = mlb.transform(y_dev)
     encoded_labels_test = mlb.transform(y_test)
     # print(mlb.classes_)
-
 
     return encoded_labels_train, encoded_labels_dev, encoded_labels_test, mlb
 
@@ -278,14 +256,16 @@ def evaluate_baseline(y_val, y_val_predictions, all_labels):
     return accuracy, report
 
 
-def fit_classify_evaluate(set):
-    if set == 'dev':
+def fit_classify_evaluate(dataset):
+    if dataset == 'dev':
         # Fit data/Extract features
-        X_train_term_doc_matrix, y_train, X_dev_term_doc_matrix, y_dev = create_term_document_matrix(X_train,
-                                                                                                     encoded_y_train,
-                                                                                                     X_dev,
-                                                                                                     encoded_y_dev,
-                                                                                                     include_additional_features=True)
+        X_train_term_doc_matrix, y_train, X_dev_term_doc_matrix, y_dev = create_term_document_matrix(
+            X_train,
+            encoded_y_train,
+            X_dev,
+            encoded_y_dev,
+            include_additional_features=True
+        )
         save_matrices(X_train_term_doc_matrix, y_train, X_dev_term_doc_matrix, y_dev)
         # X_train_term_doc_matrix, y_train, X_dev_term_doc_matrix, y_dev = load_matrices()
 
@@ -297,13 +277,17 @@ def fit_classify_evaluate(set):
         # Evaluate the classifier
         accuracy_score, classification_report = evaluate_baseline(y_dev, y_dev_pred, unique_labels)
 
-    elif set == 'test':
+        return accuracy_score, classification_report
+
+    elif dataset == 'test':
         # Fit data/Extract features
-        X_train_term_doc_matrix, y_train, X_test_term_doc_matrix, y_test = create_term_document_matrix(X_train,
-                                                                                                       encoded_y_train,
-                                                                                                       X_test,
-                                                                                                       encoded_y_test,
-                                                                                                       include_additional_features=True)
+        X_train_term_doc_matrix, y_train, X_test_term_doc_matrix, y_test = create_term_document_matrix(
+            X_train,
+            encoded_y_train,
+            X_test,
+            encoded_y_test,
+            include_additional_features=True
+        )
         save_matrices(X_train_term_doc_matrix, y_train, X_test_term_doc_matrix, y_test)
         # X_train_term_doc_matrix, y_train, X_dev_term_doc_matrix, y_dev = load_matrices()
 
@@ -314,6 +298,8 @@ def fit_classify_evaluate(set):
 
         # Evaluate the classifier
         accuracy_score, classification_report = evaluate_baseline(y_test, y_test_pred, unique_labels)
+
+        return accuracy_score, classification_report
 
 
 if __name__ == '__main__':
@@ -333,8 +319,8 @@ if __name__ == '__main__':
 
     # Fit data/Extract features, Train & Classify, Evaluate
 
-    ## DEV SET
-    fit_classify_evaluate('dev')
+    # DEV SET
+    accuracy_score, classification_report = fit_classify_evaluate('dev')
 
-    ## TEST SET
-    # fit_classify_evaluate('test')
+    # TEST SET
+    # accuracy_score, classification_report = fit_classify_evaluate('test')
