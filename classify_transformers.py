@@ -34,7 +34,30 @@ class InputFeatures:
         self.label = label
 
 
+def recover_data():
+    X_train = load_data('X_train.pkl')
+    print('Items in X_train:', len(X_train))
+    y_train = load_data('y_train.pkl')
+    print('Items in y_train:', len(y_train))
+    X_dev = load_data('X_dev.pkl')
+    print('Items in X_dev:', len(X_dev))
+    y_dev = load_data('y_dev.pkl')
+    print('Items in y_dev:', len(y_dev))
+    X_test = load_data('X_test.pkl')
+    print('Items in X_test:', len(X_test))
+    y_test = load_data('y_test.pkl')
+    print('Items in y_test:', len(y_test))
+    unique_labels = load_data('unique_labels.pkl')
+    print(f'There are {len(unique_labels)} unique labels')
+    print('The unique labels are:', unique_labels)
+
+    return X_train, y_train, X_dev, y_dev, X_test, y_test, unique_labels
+
+
+
+
 def prepare_datasets(X_train, y_train, X_val, y_val, labels):
+    print('Preparing datasets as tensors...')
     label_map = {label: i for i, label in enumerate(labels)}
 
     labels_numeric_train = [label_map[label] for label in y_train]
@@ -105,35 +128,7 @@ def evaluate_model(trainer, val_dataset, all_labels, label_map):
     return accuracy, actual_labels, predicted_labels, actual_labels_numeric
 
 
-if __name__ == "__main__":
-    X_train = load_data('X_train.pkl')
-    y_train = load_data('y_train.pkl')
-    X_dev = load_data('X_dev.pkl')
-    y_dev = load_data('y_dev.pkl')
-    X_test = load_data('X_test.pkl')
-    y_test = load_data('y_test.pkl')
-    mlb = load_data('mlb.pkl')
-    print(type(mlb))
-    all_labels = load_data('unique_labels.pkl')
-    print('The unique labels are:', all_labels)
-
-    X_train = X_train[:1000]
-    print('X_train:', X_train)
-    y_train = y_train[:1000]
-    print('y_train:', y_train)
-    X_dev = X_dev[:100]
-    y_dev = y_dev[:100]
-    # print(texts)
-    # print(labels)
-
-    # tokenizer = RobertaTokenizer.from_pretrained("roberta-base")
-
-    train_dataset, val_dataset, tokenizer, label_map = prepare_datasets(X_train, y_train, X_dev, y_dev, all_labels)
-    # train_dataset = prepare_dataset(X_train, y_train, tokenizer, mlb)
-    # val_dataset = prepare_dataset(X_dev, y_dev, tokenizer, mlb)
-
-    # all_labels = list(set(labels))
-
+def train_and_evaluate(all_labels, train_dataset, val_dataset, label_map):
     model = RobertaForSequenceClassification.from_pretrained("roberta-base", num_labels=len(all_labels))
 
     training_args = TrainingArguments(
@@ -147,6 +142,8 @@ if __name__ == "__main__":
     )
 
     trainer = train_model(model, train_dataset, val_dataset, training_args)
+    print('Training Roberta pre-trained model...')
+    print('Classifying...')
 
     accuracy, actual_labels, predicted_labels, actual_labels_numeric = evaluate_model(trainer, val_dataset, all_labels,
                                                                                       label_map)
@@ -165,3 +162,57 @@ if __name__ == "__main__":
 
     report = generate_classification_report(actual_labels_numeric, [label_map[label] for label in predicted_labels],
                                             all_labels)
+
+    return trainer, accuracy, report
+
+
+if __name__ == "__main__":
+    # Get data generated previously to spare computing effort
+    X_train, y_train, X_dev, y_dev, X_test, y_test, all_labels = recover_data()
+
+    X_train = X_train[:1000]
+    y_train = y_train[:1000]
+    X_dev = X_dev[:100]
+    y_dev = y_dev[:100]
+
+
+    # DEV SET
+
+    train_dataset, val_dataset, tokenizer, label_map = prepare_datasets(X_train, y_train, X_dev, y_dev, all_labels)
+    train_and_evaluate(all_labels, train_dataset, val_dataset, label_map)
+
+    # model = RobertaForSequenceClassification.from_pretrained("roberta-base", num_labels=len(all_labels))
+    #
+    # training_args = TrainingArguments(
+    #     output_dir="./results",
+    #     num_train_epochs=3,
+    #     per_device_train_batch_size=8,
+    #     per_device_eval_batch_size=8,
+    #     warmup_steps=500,
+    #     weight_decay=0.01,
+    #     logging_dir="./logs",
+    # )
+    #
+    # trainer = train_model(model, train_dataset, val_dataset, training_args)
+    #
+    # accuracy, actual_labels, predicted_labels, actual_labels_numeric = evaluate_model(trainer, val_dataset, all_labels,
+    #                                                                                   label_map)
+    # unique_labels = set(actual_labels)
+    # num_classes = len(unique_labels)
+    #
+    # print("Accuracy:", accuracy)  # For the first 100 Accuracy: 0.65 no features
+    # # 1000 acc 0.695
+    #
+    # if len(unique_labels) != num_classes:
+    #     print("Number of unique labels:", len(unique_labels))
+    #     print("Expected number of classes:", num_classes)
+    #     print("Actual labels:", unique_labels)
+    #     print("Predicted labels:", predicted_labels)
+    #     print("All labels:", all_labels)
+    #
+    # report = generate_classification_report(actual_labels_numeric, [label_map[label] for label in predicted_labels],
+    #                                         all_labels)
+
+    # TEST SET
+    train_dataset, test_dataset, tokenizer, label_map = prepare_datasets(X_train, y_train, X_test, y_test, all_labels)
+    train_and_evaluate(all_labels, train_dataset, test_dataset, label_map)

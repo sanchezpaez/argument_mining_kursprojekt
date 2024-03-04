@@ -35,14 +35,7 @@ from evaluate import generate_classification_report
 from features import check_claim_verbs, extract_dependency_features_for_corpus, extract_ngram_features_for_corpus, \
     extract_topic_features
 from preprocess import process_annotations, merge_txt_files, transform_files_to_dataframes, \
-    get_labelled_sentences_from_data
-
-ROOT = Path(__file__).parent.resolve()
-CORPUS = Path(f"{ROOT}/corpus/")
-ALL_ARTICLES = Path(f"{ROOT}/all_articles.txt")
-SEMANTIC_TYPES = Path(f"{ROOT}/essays_semantic_types.tsv")
-ALL_ANNOTATIONS = Path(f"{ROOT}/all_sorted_annotated_texts.txt")
-
+    get_labelled_sentences_from_data, CORPUS, SEMANTIC_TYPES, ALL_ANNOTATIONS, ALL_ARTICLES
 
 
 def save_data(data: any, filename: any) -> None:
@@ -93,34 +86,6 @@ def encode_data(y_train, y_dev, y_test):
     encoded_labels_test = mlb.transform(y_test)
     # print(mlb.classes_)
 
-    # # Tokenize training, development, and testing sets
-    # encodings_train = tokenizer(X_train, truncation=True, padding=True)
-    # encodings_dev = tokenizer(X_dev, truncation=True, padding=True)
-    # encodings_test = tokenizer(X_test, truncation=True, padding=True)
-    #
-    # # Convert encoded labels to PyTorch tensors
-    # y_train_tensor = torch.tensor(encoded_labels_train, dtype=torch.long)
-    # y_dev_tensor = torch.tensor(encoded_labels_dev, dtype=torch.long)
-    # y_test_tensor = torch.tensor(encoded_labels_test, dtype=torch.long)
-    #
-    # # Create PyTorch datasets
-    # train_dataset = torch.utils.data.TensorDataset(
-    #     torch.tensor(encodings_train['input_ids']),
-    #     torch.tensor(encodings_train['attention_mask']),
-    #     y_train_tensor
-    # )
-    #
-    # dev_dataset = torch.utils.data.TensorDataset(
-    #     torch.tensor(encodings_dev['input_ids']),
-    #     torch.tensor(encodings_dev['attention_mask']),
-    #     y_dev_tensor
-    # )
-    #
-    # test_dataset = torch.utils.data.TensorDataset(
-    #     torch.tensor(encodings_test['input_ids']),
-    #     torch.tensor(encodings_test['attention_mask']),
-    #     y_test_tensor
-    # )
 
     return encoded_labels_train, encoded_labels_dev, encoded_labels_test, mlb
 

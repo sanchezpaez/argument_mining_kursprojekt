@@ -36,12 +36,15 @@ from transformers import RobertaForSequenceClassification
 from evaluate import generate_classification_report
 from features import check_claim_verbs, extract_dependency_features_for_corpus, extract_ngram_features_for_corpus, \
     extract_topic_features
-from preprocess import process_annotations, merge_txt_files, transform_files_to_dataframes, \
-    get_labelled_sentences_from_data
+
+ROOT = Path(__file__).parent.resolve()
+CORPUS = Path(f"{ROOT}/corpus/")
+ALL_ARTICLES = Path(f"{ROOT}/all_articles.txt")
+SEMANTIC_TYPES = Path(f"{ROOT}/essays_semantic_types.tsv")
+ALL_ANNOTATIONS = Path(f"{ROOT}/all_sorted_annotated_texts.txt")
 
 import pandas as pd
 
-from classify_rfc import ALL_ARTICLES
 
 
 def locate_text_span(directory, filename, start_index, end_index):
