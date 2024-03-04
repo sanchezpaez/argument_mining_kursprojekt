@@ -7,12 +7,13 @@ from transformers import RobertaTokenizer
 from sklearn.preprocessing import MultiLabelBinarizer
 
 from evaluate import generate_classification_report
-from preprocess_corpus import load_data
+from classify_rfc import load_data
 
 
 class CustomDataCollator(torch.utils.data.DataLoader):
     def __init__(self, tokenizer):
         self.tokenizer = tokenizer
+
     def __call__(self, features):
         batch = {}
         if isinstance(features[0], tuple):
@@ -46,14 +47,14 @@ def prepare_datasets(X_train, y_train, X_val, y_val, labels):
     train_features = []
     for i in range(len(X_train)):
         train_features.append(InputFeatures(input_ids=train_encodings['input_ids'][i],
-                                      attention_mask=train_encodings['attention_mask'][i],
-                                      label=labels_numeric_train[i]))
+                                            attention_mask=train_encodings['attention_mask'][i],
+                                            label=labels_numeric_train[i]))
 
     val_features = []
     for i in range(len(X_val)):
         val_features.append(InputFeatures(input_ids=val_encodings['input_ids'][i],
-                                            attention_mask=val_encodings['attention_mask'][i],
-                                            label=labels_numeric_val[i]))
+                                          attention_mask=val_encodings['attention_mask'][i],
+                                          label=labels_numeric_val[i]))
 
     train_dataset = torch.utils.data.TensorDataset(
         torch.tensor([f.input_ids for f in train_features]),
@@ -79,6 +80,7 @@ def train_model(model, train_dataset, val_dataset, training_args):
     )
     trainer.train()
     return trainer
+
 
 def evaluate_model(trainer, val_dataset, all_labels, label_map):
     all_labels = list(all_labels)
@@ -153,8 +155,6 @@ if __name__ == "__main__":
 
     print("Accuracy:", accuracy)  # For the first 100 Accuracy: 0.65 no features
     # 1000 acc 0.695
-
-
 
     if len(unique_labels) != num_classes:
         print("Number of unique labels:", len(unique_labels))

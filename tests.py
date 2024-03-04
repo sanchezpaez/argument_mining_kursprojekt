@@ -5,7 +5,7 @@ from tokenize import tokenize
 import nltk
 import pandas as pd
 
-from preprocess_corpus import CORPUS
+from classify_rfc import CORPUS
 
 
 
