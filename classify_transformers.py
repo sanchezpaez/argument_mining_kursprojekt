@@ -3,8 +3,9 @@ from sklearn.metrics import accuracy_score
 from transformers import RobertaForSequenceClassification, Trainer, TrainingArguments
 from transformers import RobertaTokenizer
 
-from classify_rfc import load_data
+from classify_rfc import load_data, reformat_corpus, get_texts_and_labels, split_data
 from evaluate import generate_classification_report
+from preprocess import CORPUS, SEMANTIC_TYPES, ALL_ANNOTATIONS, ALL_ARTICLES
 
 
 class CustomDataCollator(torch.utils.data.DataLoader):
@@ -163,17 +164,36 @@ def train_and_evaluate(all_labels, train_dataset, val_dataset, label_map):
 
 if __name__ == "__main__":
     # Get data generated previously to spare computing effort
-    X_train, y_train, X_dev, y_dev, X_test, y_test, all_labels = recover_data()
+    # X_train, y_train, X_dev, y_dev, X_test, y_test, all_labels = recover_data()
+    # Reformat corpus
+    articles_df, claims_n_premises_df = reformat_corpus(
+        directory=CORPUS, annotations_file=SEMANTIC_TYPES,
+        annotated_texts_file=ALL_ANNOTATIONS, article_file=ALL_ARTICLES
+    )
 
-    X_train = X_train[:1000]
-    y_train = y_train[:1000]
-    X_dev = X_dev[:100]
-    y_dev = y_dev[:100]
+    # Get labelled texts
+    texts, labels, unique_labels = get_texts_and_labels(
+        articles_df,
+        claims_n_premises_df,
+        preprocess=False  # NO PREPROCESS IF WE SAVE DATA FOR ROBERTA!!
+    )
+
+    # Split the data
+    X_train, X_dev, X_test, y_train, y_dev, y_test = split_data(texts, labels)  # 10056, 1257, 1257
+
+    # X_train = X_train[:100]
+    # y_train = y_train[:100]
+    # X_dev = X_dev[:10]
+    # y_dev = y_dev[:10]
 
     # DEV SET
-    train_dataset, val_dataset, tokenizer, label_map = prepare_datasets(X_train, y_train, X_dev, y_dev, all_labels)
-    train_and_evaluate(all_labels, train_dataset, val_dataset, label_map)
+    print('DEVELOPMENT SET RESULTS')
+    print('_______________________')
+    train_dataset, val_dataset, tokenizer, label_map = prepare_datasets(X_train, y_train, X_dev, y_dev, unique_labels)
+    train_and_evaluate(unique_labels, train_dataset, val_dataset, label_map)
 
     # TEST SET
-    train_dataset, test_dataset, tokenizer, label_map = prepare_datasets(X_train, y_train, X_test, y_test, all_labels)
-    train_and_evaluate(all_labels, train_dataset, test_dataset, label_map)
+    # print('TEST SET RESULTS')
+    # print('_______________________')
+    # train_dataset, test_dataset, tokenizer, label_map = prepare_datasets(X_train, y_train, X_test, y_test, unique_labels)
+    # train_and_evaluate(unique_labels, train_dataset, test_dataset, label_map)

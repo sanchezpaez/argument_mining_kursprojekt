@@ -52,7 +52,7 @@ def split_data(texts, labels, dev_size=0.1, test_size=0.1, random_state=42):
     save_data(y_dev, 'y_dev.pkl')
     save_data(X_test, 'X_test.pkl')
     save_data(y_test, 'y_test.pkl')
-    # save_data(mlb, 'mlb.pkl')
+    print('')
 
     return X_train, X_dev, X_test, y_train, y_dev, y_test
 
@@ -243,7 +243,7 @@ def train_baseline(classifier, X_train_term_doc_matrix, y_train, X_dev_term_doc_
 
 def evaluate_baseline(y_val, y_val_predictions, all_labels):
     accuracy = accuracy_score(y_val, y_val_predictions)
-    print("Development Set Accuracy:", accuracy)
+    print("Accuracy score:", accuracy)
 
     # 0.4789180588703262 no features, 0.48369132856006364 2 features, 0.4813046937151949 3 features
     # No preprocess yes features: 0.4606205250596659, 0.4598249801113763 dev set
@@ -275,9 +275,10 @@ def fit_classify_evaluate(dataset):
         y_dev_pred = train_baseline(classifier, X_train_term_doc_matrix, y_train, X_dev_term_doc_matrix)
 
         # Evaluate the classifier
+        print("Development Set")
         accuracy_score, classification_report = evaluate_baseline(y_dev, y_dev_pred, unique_labels)
-
-        return accuracy_score, classification_report
+        save_data(accuracy_score, 'accuracy_dev_rfc.pkl')
+        save_data(classification_report, 'classification_report_dev_rfc.pkl')
 
     elif dataset == 'test':
         # Fit data/Extract features
@@ -297,9 +298,10 @@ def fit_classify_evaluate(dataset):
         y_test_pred = train_baseline(classifier, X_train_term_doc_matrix, y_train, X_test_term_doc_matrix)
 
         # Evaluate the classifier
+        print("Test Set")
         accuracy_score, classification_report = evaluate_baseline(y_test, y_test_pred, unique_labels)
-
-        return accuracy_score, classification_report
+        save_data(accuracy_score, 'accuracy_test_rfc.pkl')
+        save_data(classification_report, 'classification_report_test_rfc.pkl')
 
 
 if __name__ == '__main__':
@@ -310,17 +312,20 @@ if __name__ == '__main__':
     )
 
     # Get and preprocess labelled texts
-    texts, labels, unique_labels = get_texts_and_labels(articles_df, claims_n_premises_df,
-                                                        preprocess=True)  # NO PREPROCESS IF WE SAVE DATA FOR ROBERTA!!
+    texts, labels, unique_labels = get_texts_and_labels(
+        articles_df,
+        claims_n_premises_df,
+        preprocess=False # NO PREPROCESS IF WE SAVE DATA FOR ROBERTA!!
+    )
 
     # Encode and split the data
     X_train, X_dev, X_test, y_train, y_dev, y_test = split_data(texts, labels)
     encoded_y_train, encoded_y_dev, encoded_y_test, mlb = encode_data(y_train, y_dev, y_test)
 
     # Fit data/Extract features, Train & Classify, Evaluate
-
-    # DEV SET
-    accuracy_score, classification_report = fit_classify_evaluate('dev')
-
-    # TEST SET
-    # accuracy_score, classification_report = fit_classify_evaluate('test')
+    #
+    # # DEV SET
+    # fit_classify_evaluate('dev')
+    #
+    # # TEST SET
+    # fit_classify_evaluate('test')

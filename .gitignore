@@ -34,3 +34,7 @@ roberta_sequence_classification_model
 results/
 .env/
 env/
+accuracy_test_rfc.pkl
+accuracy_dev_rfc.pkl
+classification_report_test_rfc.pkl
+classification_report_dev_rfc.pkl

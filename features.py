@@ -1,16 +1,21 @@
+from typing import Tuple, Any, List
+
 import numpy as np
-import click.termui
+import scipy
 import spacy
-import nltk
-from nltk.tokenize import word_tokenize
-from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.decomposition import LatentDirichletAllocation
-from sklearn.feature_extraction.text import CountVectorizer
-import numpy as np
-from sklearn.preprocessing import OneHotEncoder
+from sklearn.feature_extraction.text import TfidfVectorizer
 
 
 def check_claim_verbs(sentence: list[str]) -> int:
+    """
+    Check if the given sentence contains any claim verbs.
+    Args:
+    sentence (list[str]): List of lemmas in the sentence.
+    Returns:
+    int: 1 if claim verb is found, 0 otherwise.
+    """
+
     claim_verbs = ['argue', 'claim', 'emphasise', 'contend', 'maintain', 'assert', 'theorize', 'support the view that',
                    'deny', 'negate', 'refute', 'reject', 'challenge', 'strongly believe that', 'counter the view that',
                    'acknowledge', 'consider', 'discover', 'hypothesize', 'object', 'say', 'admit', 'assume', 'decide',
@@ -22,42 +27,16 @@ def check_claim_verbs(sentence: list[str]) -> int:
     return 0
 
 
-def word2features(sent, i):
-    """Return list of features for every token in a sentence."""
-    features = []
-    word = sent[i]
+def extract_ngram_features_for_corpus(texts, vectorizer=None) -> Tuple[scipy.sparse.spmatrix, Any]:
+    """
+    Extract n-gram features from the given texts.
+    Args:
+    texts (list): List of texts to extract features from.
+    vectorizer (Any, optional): The vectorizer to use. Defaults to None.
+    Returns:
+    Tuple[scipy.sparse.spmatrix, Any]: Tuple containing the n-gram matrix and the vectorizer used.
+    """
 
-    features.append(word.lower())
-    features = [f.encode('utf-8') for f in features]
-    features.append(word[-3:])
-    features.append(word[-2:])
-    features.append(str(word.istitle()))
-    features.append(str(word.isupper()))
-    features.append(str(word.istitle()))
-    features.append(str(word.isdigit()))
-
-    if i > 0:
-        features.append(sent[i - 1])
-    else:
-        features.append(str('BOS'))
-    punc_cat = {"Pc", "Pd", "Ps", "Pe", "Pi", "Pf", "Po"}
-    # Comment out features that give us worse accuracy
-    # if all(unicodedata.category(x) in punc_cat for x in word):
-    #     features.append("PUNCTUATION")
-    # if i < len(sent) - 1:
-    #     features.append(sent[i + 1])
-    # else:
-    #     features.append(str('EOS'))
-
-    return features
-
-
-def sent2features(sent, index):
-    """Call word2features on sentence."""
-    return word2features(sent, index)
-
-
-def extract_ngram_features_for_corpus(texts, vectorizer=None):
     ngram_range = (1, 2)
     if vectorizer is None:
         # Initialize CountVectorizer with desired n-gram range
@@ -67,7 +46,16 @@ def extract_ngram_features_for_corpus(texts, vectorizer=None):
     return ngram_matrix, vectorizer
 
 
-def extract_dependency_features_for_corpus(texts, train_dependency_matrix=None):
+def extract_dependency_features_for_corpus(texts, train_dependency_matrix=None) -> np.ndarray:
+    """
+    Extract dependency features from the given texts.
+    Args:
+    texts (list): List of texts to extract features from.
+    train_dependency_matrix (np.ndarray, optional): Dependency matrix from the training data. Defaults to None.
+    Returns:
+    np.ndarray: Binary matrix containing dependency features.
+    """
+
     try:
         nlp = spacy.load("en_core_web_sm")
     except ImportError as e:
@@ -107,7 +95,18 @@ def extract_dependency_features_for_corpus(texts, train_dependency_matrix=None):
     return binary_matrix
 
 
-def extract_topic_features(texts, vectorizer, num_topics=5, num_words=5):
+def extract_topic_features(texts, vectorizer, num_topics=5, num_words=5) -> Tuple[List[List[str]], np.ndarray]:
+    """
+    Extract topic features using Latent Dirichlet Allocation (LDA).
+    Args:
+    texts (list): List of texts to extract features from.
+    vectorizer (Any): Vectorizer object to transform the text data.
+    num_topics (int, optional): Number of topics. Defaults to 5.
+    num_words (int, optional): Number of words per topic. Defaults to 5.
+    Returns:
+    Tuple[List[List[str]], np.ndarray]: Tuple containing top words for each topic and topic distributions.
+    """
+
     # Transform the text data using the existing vectorizer
     X = vectorizer.transform(texts)
 
@@ -127,9 +126,3 @@ def extract_topic_features(texts, vectorizer, num_topics=5, num_words=5):
         top_words.append([feature_names[i] for i in topic.argsort()[:-num_words - 1:-1]])
 
     return top_words, topic_distributions
-
-
-def extract_pos_tags(text):
-    words = word_tokenize(text)
-    pos_tags = nltk.pos_tag(words)
-    return pos_tags
