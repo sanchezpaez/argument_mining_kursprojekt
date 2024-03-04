@@ -43,43 +43,6 @@ SEMANTIC_TYPES = Path(f"{ROOT}/essays_semantic_types.tsv")
 ALL_ANNOTATIONS = Path(f"{ROOT}/all_sorted_annotated_texts.txt")
 
 
-def concatenate_txt_files(directory, output_file):
-    """Write file with all articles texts and numbers"""
-    # Check if the directory exists
-    if not os.path.isdir(directory):
-        print(f"Directory '{directory}' does not exist.")
-        return
-
-    # Open the output file in append mode
-    with open(output_file, 'w') as outfile:
-        # Iterate over files in the directory
-        for filename in os.listdir(directory):
-            if filename.endswith(".txt"):
-                file_path = os.path.join(directory, filename)
-                with open(file_path, 'r') as infile:
-                    # Read content of each file and write to the output file
-                    article_number = filename.split('.')[0]
-                    content = infile.read()
-                    # Write article number and text content to the output file
-                    outfile.write(f"Article {article_number}\n")
-                    outfile.write(content)
-                    # Add a newline separator between articles
-                    outfile.write('\n')
-
-
-def find_text_span(file_path, start_index, end_index):
-    # Check if the file exists
-    if not os.path.isfile(file_path):
-        print(f"File '{file_path}' does not exist.")
-        return None
-
-    # Open the file and read its content
-    with open(file_path, 'r') as file:
-        content = file.read()
-        text_span = content[start_index:end_index]
-        return text_span
-
-
 def locate_text_span(directory, filename, start_index, end_index):
     # Check if the directory exists
     if not os.path.isdir(directory):
@@ -133,32 +96,6 @@ def process_annotations(tsv_file, output_file, directory):
             filename_parts = filename.split('.')
             filename = filename_parts[0]
             output.write(f"{filename}\t{annotation_type}\t{text_span}\n")
-
-
-def process_article(article_text, annotations):
-    processed_paragraphs = []
-    for paragraph in article_text.split('\n'):
-        if paragraph.strip() == "":
-            continue
-        label = 'non_argumentative'
-        for start_end, label_value in annotations.items():
-            start, end = start_end
-            if paragraph.find(label_value) != -1:
-                label = label_value
-                break
-        processed_paragraphs.append((paragraph, label))
-    return processed_paragraphs
-
-
-def read_annotations(annotations_file):
-    annotations = {}
-    with open(annotations_file, 'r') as file:
-        for line in file:
-            parts = line.strip().split('\t')
-            filename = parts[0]
-            label = parts[1]
-            annotations[(filename, label)] = parts[2]
-    return annotations
 
 
 def merge_txt_files(directory):
@@ -283,22 +220,6 @@ def preprocess_text(text):
     return preprocessed_text
 
 
-def preprocess_text_fragments(all_texts, filename):
-    X_preprocessed = []
-    for text in tqdm(all_texts):
-        preprocessed_text = preprocess_text(text)
-        # print(text)
-        # print(preprocessed_text)
-        X_preprocessed.append(preprocessed_text)
-    #     X_preprocessed.append(' '.join(preprocessed_text))
-    print('Saving data...')
-    save_data(X_preprocessed, filename)
-    print(f"The number of preprocessed texts is {len(X_preprocessed)}.")
-    print(f"The preprocessed sentences have been saved and will be available as {filename}")
-
-    return X_preprocessed
-
-
 def save_data(data: any, filename: any) -> None:
     """Save data into file_name (.pkl file)to save time."""
     with open(filename, mode="wb") as file:
@@ -314,24 +235,13 @@ def load_data(filename: any) -> any:
     return output
 
 
-# def encode_and_split_data(texts, labels, dev_size=0.1, test_size=0.1, random_state=42):
-#     # Encode labels for multilabel classification
-#     mlb = MultiLabelBinarizer()
-#     encoded_labels = mlb.fit_transform(labels)
-#     # print(mlb.classes_)
-#
-#     # Split the dataset into training, development, and testing sets
-#     X_train, X_temp, y_train, y_temp = train_test_split(texts, encoded_labels, test_size=(dev_size + test_size), random_state=random_state)
-#     X_dev, X_test, y_dev, y_test = train_test_split(X_temp, y_temp, test_size=test_size/(dev_size + test_size), random_state=random_state)
-#
-#     return X_train, X_dev, X_test, y_train, y_dev, y_test, mlb
-
 def split_data(texts, labels, dev_size=0.1, test_size=0.1, random_state=42):
     # Split the dataset into training, development, and testing sets
     X_train, X_temp, y_train, y_temp = train_test_split(texts, labels, test_size=(dev_size + test_size), random_state=random_state)
     X_dev, X_test, y_dev, y_test = train_test_split(X_temp, y_temp, test_size=test_size/(dev_size + test_size), random_state=random_state)
 
     return X_train, X_dev, X_test, y_train, y_dev, y_test
+
 
 def encode_data(y_train, y_dev, y_test):
     # Encode labels for multilabel classification
@@ -371,7 +281,6 @@ def encode_data(y_train, y_dev, y_test):
     # )
 
     return encoded_labels_train, encoded_labels_dev, encoded_labels_test, mlb
-
 
 
 def create_term_document_matrix(X_train, y_train, X_dev, y_dev, include_additional_features=False):
@@ -491,19 +400,49 @@ def load_matrices():
     return X_train, X_dev, y_train, y_dev
 
 
+def reformat_corpus(directory, annotations_file, annotated_texts_file, article_file):
+    process_annotations(annotations_file, annotated_texts_file, directory)
+    merge_txt_files(directory)  # Returns 'all_articles.txt'
+    articles_df, claims_n_premises_df = transform_files_to_dataframes(article_file, annotated_texts_file)
+
+    print('Reformatting corpus...')
+
+    return articles_df, claims_n_premises_df
+
+
+def get_texts_and_labels(dataframe_articles, dataframe_arguments, preprocess=False):
+    print('Processing data...')
+    texts, labels = get_labelled_sentences_from_data(dataframe_articles,
+                                                     dataframe_arguments)
+    print("Number of texts:", len(texts))  # 12570
+    print("Number of labels:", len(labels))  # 12570
+
+    save_data(texts, 'texts.pkl')
+    save_data(labels, 'labels.pkl')
+
+    if preprocess:
+        preprocessed_texts, preprocessed_labels = get_labelled_sentences_from_data(articles_df, claims_n_premises_df, preprocess=True)
+        print("Number of preprocessed texts:", len(texts))  # 9712 after empty texts removed
+        print("Number of preprocessed labels:", len(labels))  # 9712 after empty texts removed
+        save_data(preprocessed_texts, 'preprocessed_texts.pkl')
+        save_data(preprocessed_labels, 'preprocessed_labels.pkl')
+        labels = preprocessed_labels
+        texts = preprocessed_texts
+
+    return texts, labels
+
+
+
 if __name__ == '__main__':
-    # concatenate_txt_files(CORPUS, ALL_ARTICLES)
-    process_annotations(SEMANTIC_TYPES, ALL_ANNOTATIONS, CORPUS)
-    merge_txt_files(CORPUS)  # Returns 'all_articles.txt'
-    articles_df, claims_n_premises_df = transform_files_to_dataframes(ALL_ARTICLES, ALL_ANNOTATIONS)
+    # Reformat corpus
+    articles_df, claims_n_premises_df = reformat_corpus(
+        directory=CORPUS, annotations_file=SEMANTIC_TYPES,
+        annotated_texts_file=ALL_ANNOTATIONS, article_file=ALL_ARTICLES
+    )
 
     # Get and preprocess labelled texts
-    texts, labels = get_labelled_sentences_from_data(articles_df, claims_n_premises_df) # NO PREPROCESS IF WE SAVE DATA FOR ROBERTA!!
-    print(f"There are {len(texts)} texts") # 12570
-    print(f"There are {len(labels)} labels")
-    # save_data(texts, 'texts.pkl')
-    # save_data(labels, 'labels.pkl')
-
+    texts, labels = get_texts_and_labels(articles_df, claims_n_premises_df)  # NO PREPROCESS IF WE SAVE DATA FOR ROBERTA!!
+    # OR
     # preprocessed_texts, preprocessed_labels = get_labelled_sentences_from_data(articles_df, claims_n_premises_df, preprocess=True)
     # print(f"There are {len(preprocessed_texts)} preprocessed texts") # 9712 after empty texts removed
     # print(f"There are {len(preprocessed_labels)} preprocessed labels")
@@ -519,7 +458,6 @@ if __name__ == '__main__':
     print(f"The number of classes is {num_classes}")  # 10
 
     # Encode and split the data
-    # X_train, X_dev, X_test, y_train, y_dev, y_test, mlb = encode_and_split_data(texts, labels)
     X_train, X_dev, X_test, y_train, y_dev, y_test = split_data(texts, labels)
     encoded_y_train, encoded_y_dev, encoded_y_test, mlb = encode_data(y_train, y_dev, y_test)
 
