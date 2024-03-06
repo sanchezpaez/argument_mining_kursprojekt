@@ -187,13 +187,13 @@ if __name__ == "__main__":
     # y_dev = y_dev[:10]
 
     # DEV SET
-    print('DEVELOPMENT SET RESULTS')
-    print('_______________________')
-    train_dataset, val_dataset, tokenizer, label_map = prepare_datasets(X_train, y_train, X_dev, y_dev, unique_labels)
-    train_and_evaluate(unique_labels, train_dataset, val_dataset, label_map)
+    # print('DEVELOPMENT SET RESULTS')
+    # print('_______________________')
+    # train_dataset, val_dataset, tokenizer, label_map = prepare_datasets(X_train, y_train, X_dev, y_dev, unique_labels)
+    # train_and_evaluate(unique_labels, train_dataset, val_dataset, label_map)
 
     # TEST SET
-    # print('TEST SET RESULTS')
-    # print('_______________________')
-    # train_dataset, test_dataset, tokenizer, label_map = prepare_datasets(X_train, y_train, X_test, y_test, unique_labels)
-    # train_and_evaluate(unique_labels, train_dataset, test_dataset, label_map)
+    print('TEST SET RESULTS')
+    print('_______________________')
+    train_dataset, test_dataset, tokenizer, label_map = prepare_datasets(X_train, y_train, X_test, y_test, unique_labels)
+    train_and_evaluate(unique_labels, train_dataset, test_dataset, label_map)

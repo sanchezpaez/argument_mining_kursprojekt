@@ -4,6 +4,7 @@ import pickle
 from time import sleep
 
 import numpy as np
+from sklearn.preprocessing import LabelEncoder
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics import accuracy_score
@@ -14,7 +15,7 @@ from evaluate import generate_classification_report
 from features import check_claim_verbs, extract_dependency_features_for_corpus, extract_ngram_features_for_corpus, \
     extract_topic_features
 from preprocess import process_annotations, merge_txt_files, transform_files_to_dataframes, \
-    get_labelled_sentences_from_data, CORPUS, SEMANTIC_TYPES, ALL_ANNOTATIONS, ALL_ARTICLES
+    get_labelled_sentences_from_data, CORPUS, SEMANTIC_TYPES, ALL_ANNOTATIONS, ALL_ARTICLES, preprocess_texts_and_labels
 
 
 def save_data(data: any, filename: any) -> None:
@@ -58,14 +59,24 @@ def split_data(texts, labels, dev_size=0.1, test_size=0.1, random_state=42):
 
 
 def encode_data(y_train, y_dev, y_test):
-    # Encode labels for multilabel classification
-    mlb = MultiLabelBinarizer()
-    encoded_labels_train = mlb.fit_transform(y_train)
-    encoded_labels_dev = mlb.transform(y_dev)
-    encoded_labels_test = mlb.transform(y_test)
-    # print(mlb.classes_)
+    # # Encode labels for multilabel classification
+    # mlb = MultiLabelBinarizer()
+    # encoded_labels_train = mlb.fit_transform(y_train)
+    # encoded_labels_dev = mlb.transform(y_dev)
+    # encoded_labels_test = mlb.transform(y_test)
+    # # print(mlb.classes_)
+    #
+    # return encoded_labels_train, encoded_labels_dev, encoded_labels_test, mlb
+    # Encode labels for multiclass classification
+    label_encoder = LabelEncoder()
+    encoded_labels_train = label_encoder.fit_transform(y_train)
+    encoded_labels_dev = label_encoder.transform(y_dev)
+    encoded_labels_test = label_encoder.transform(y_test)
 
-    return encoded_labels_train, encoded_labels_dev, encoded_labels_test, mlb
+    # Optionally, you can also get the classes if needed
+    classes = label_encoder.classes_
+
+    return encoded_labels_train, encoded_labels_dev, encoded_labels_test, classes
 
 
 def create_term_document_matrix(X_train, y_train, X_dev, y_dev, include_additional_features=False):
@@ -75,7 +86,6 @@ def create_term_document_matrix(X_train, y_train, X_dev, y_dev, include_addition
     term_doc_matrix_train = vectorizer.fit_transform(X_train)
     # print(term_doc_matrix_train)
     term_doc_matrix_dev = vectorizer.transform(X_dev)
-    print(term_doc_matrix_dev.shape)
 
     # Convert labels to numpy arrays
     y_train = np.array(y_train)
@@ -207,7 +217,7 @@ def get_texts_and_labels(dataframe_articles, dataframe_arguments, preprocess=Fal
     save_data(labels, 'labels.pkl')
 
     if preprocess:
-        preprocessed_texts, preprocessed_labels = get_labelled_sentences_from_data(articles_df, claims_n_premises_df,
+        preprocessed_texts, preprocessed_labels = get_labelled_sentences_from_data(dataframe_articles, dataframe_arguments,
                                                                                    preprocess=True)
         print("Number of preprocessed texts:", len(texts))  # 9712 after empty texts removed
         print("Number of preprocessed labels:", len(labels))  # 9712 after empty texts removed
@@ -230,13 +240,17 @@ def get_unique_labels(labels):
     return unique_labels
 
 
-def train_baseline(classifier, X_train_term_doc_matrix, y_train, X_dev_term_doc_matrix):
+def train_baseline(X_train_term_doc_matrix, y_train, X_dev_term_doc_matrix):
+    # Initialize the RandomForestClassifier
+    classifier = RandomForestClassifier()
     # Train the classifier
     classifier.fit(X_train_term_doc_matrix, y_train)
-    sleep(2)
+    print("Shape of X_train_term_doc_matrix:", X_train_term_doc_matrix.shape)
+    print("Shape of y_train:", y_train.shape)
+
     # Predict on the development set
     y_dev_pred = classifier.predict(X_dev_term_doc_matrix)
-    sleep(2)
+    print("Shape of X_dev_term_doc_matrix:", X_dev_term_doc_matrix.shape)
 
     return y_dev_pred
 
@@ -260,19 +274,21 @@ def fit_classify_evaluate(dataset):
     if dataset == 'dev':
         # Fit data/Extract features
         X_train_term_doc_matrix, y_train, X_dev_term_doc_matrix, y_dev = create_term_document_matrix(
-            X_train,
+            X_train_preprocessed,
             encoded_y_train,
-            X_dev,
+            X_dev_preprocessed,
             encoded_y_dev,
             include_additional_features=True
         )
         save_matrices(X_train_term_doc_matrix, y_train, X_dev_term_doc_matrix, y_dev)
+        print('Number of items in y_sets')
+        print(len(y_train))
+        print(len(y_dev))
+
         # X_train_term_doc_matrix, y_train, X_dev_term_doc_matrix, y_dev = load_matrices()
 
         # Train & Classify
-        # Initialize the RandomForestClassifier
-        classifier = RandomForestClassifier()
-        y_dev_pred = train_baseline(classifier, X_train_term_doc_matrix, y_train, X_dev_term_doc_matrix)
+        y_dev_pred = train_baseline(X_train_term_doc_matrix, y_train, X_dev_term_doc_matrix)
 
         # Evaluate the classifier
         print("Development Set")
@@ -283,9 +299,9 @@ def fit_classify_evaluate(dataset):
     elif dataset == 'test':
         # Fit data/Extract features
         X_train_term_doc_matrix, y_train, X_test_term_doc_matrix, y_test = create_term_document_matrix(
-            X_train,
+            X_train_preprocessed,
             encoded_y_train,
-            X_test,
+            X_test_preprocessed,
             encoded_y_test,
             include_additional_features=True
         )
@@ -293,9 +309,7 @@ def fit_classify_evaluate(dataset):
         # X_train_term_doc_matrix, y_train, X_dev_term_doc_matrix, y_dev = load_matrices()
 
         # Train & Classify
-        # Initialize the RandomForestClassifier
-        classifier = RandomForestClassifier()
-        y_test_pred = train_baseline(classifier, X_train_term_doc_matrix, y_train, X_test_term_doc_matrix)
+        y_test_pred = train_baseline(X_train_term_doc_matrix, y_train, X_test_term_doc_matrix)
 
         # Evaluate the classifier
         print("Test Set")
@@ -305,27 +319,51 @@ def fit_classify_evaluate(dataset):
 
 
 if __name__ == '__main__':
-    # Reformat corpus
-    articles_df, claims_n_premises_df = reformat_corpus(
-        directory=CORPUS, annotations_file=SEMANTIC_TYPES,
-        annotated_texts_file=ALL_ANNOTATIONS, article_file=ALL_ARTICLES
-    )
+    # # Reformat corpus
+    # articles_df, claims_n_premises_df = reformat_corpus(
+    #     directory=CORPUS, annotations_file=SEMANTIC_TYPES,
+    #     annotated_texts_file=ALL_ANNOTATIONS, article_file=ALL_ARTICLES
+    # )
+    #
+    # # Get and preprocess labelled texts
+    # texts, labels, unique_labels = get_texts_and_labels(
+    #     articles_df,
+    #     claims_n_premises_df,
+    #     preprocess=False # NO PREPROCESS IF WE SAVE DATA FOR ROBERTA!!
+    # )
+    #
+    # # Encode and split the data
+    # X_train, X_dev, X_test, y_train, y_dev, y_test = split_data(texts, labels)
+    # Load data
+    X_train = load_data('X_train.pkl')
+    y_train = load_data('y_train.pkl')
+    X_dev = load_data('X_dev.pkl')
+    y_dev = load_data('y_dev.pkl')
+    X_test = load_data('X_test.pkl')
+    y_test = load_data('y_test.pkl')
+    unique_labels = load_data('unique_labels.pkl')
+    print('Number of items in X_train:', len(X_train))  # 10056, 7787
+    print('Number of items in y_train:', len(y_train))  # 10056, 7787
+    print('Number of items in X_dev:', len(X_dev))  # 1257, 958
+    print('Number of items in y_dev:', len(y_dev))  # 1257, 958
+    print('Number of items in X_test:', len(X_test))  # 1257, 967
+    print('Number of items in y_test:', len(y_test))  # 1257, 967
 
-    # Get and preprocess labelled texts
-    texts, labels, unique_labels = get_texts_and_labels(
-        articles_df,
-        claims_n_premises_df,
-        preprocess=False # NO PREPROCESS IF WE SAVE DATA FOR ROBERTA!!
-    )
+    print('')
+    print('TRAINING SET')
+    X_train_preprocessed, y_train_preprocessed = preprocess_texts_and_labels(X_train, y_train)
+    print('DEVELOPMENT SET')
+    X_dev_preprocessed, y_dev_preprocessed = preprocess_texts_and_labels(X_dev, y_dev)
+    print('TEST SET')
+    X_test_preprocessed, y_test_preprocessed = preprocess_texts_and_labels(X_test, y_test)
 
-    # Encode and split the data
-    X_train, X_dev, X_test, y_train, y_dev, y_test = split_data(texts, labels)
-    encoded_y_train, encoded_y_dev, encoded_y_test, mlb = encode_data(y_train, y_dev, y_test)
+    # Preprocess?
+    encoded_y_train, encoded_y_dev, encoded_y_test, classes = encode_data(y_train_preprocessed, y_dev_preprocessed, y_test_preprocessed)
 
     # Fit data/Extract features, Train & Classify, Evaluate
     #
-    # # DEV SET
-    # fit_classify_evaluate('dev')
+    # DEV SET
+    fit_classify_evaluate('dev')
     #
     # # TEST SET
     # fit_classify_evaluate('test')

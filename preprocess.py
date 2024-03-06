@@ -222,3 +222,18 @@ def preprocess_text(text):
     preprocessed_text = ' '.join(tokens)
 
     return preprocessed_text
+
+
+def preprocess_texts_and_labels(X_set, y_set):
+    texts = []
+    labels = []
+    for text, label in zip(X_set, y_set):
+        preprocessed_text = preprocess_text(text)
+        if preprocessed_text:
+            texts.append(preprocessed_text)
+            labels.append(label)
+
+    print('Number of preprocessed texts:', len(texts))
+    print('Number of preprocessed labels:', len(labels))
+
+    return texts, labels
