@@ -1,6 +1,7 @@
 import numpy as np
 from sklearn.metrics import classification_report
 
+
 def generate_classification_report(actual_labels_numeric, predicted_labels_numeric, all_labels):
     class_names = all_labels
     print("Classification Report:")

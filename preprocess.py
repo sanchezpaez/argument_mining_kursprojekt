@@ -1,41 +1,13 @@
-import os
-import string
 # Sandra Sánchez Páez
 # ArgMin Modulprojekt
-from time import sleep
 
-import torch
-from transformers import RobertaTokenizer, RobertaForSequenceClassification
-from transformers import Trainer, TrainingArguments
-from sklearn.model_selection import train_test_split
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import MultiLabelBinarizer, LabelEncoder
-from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
-import numpy as np
 import os
-import pickle
-from pathlib import Path
-import re
-import nltk
-from nltk.corpus import stopwords
-from nltk.tokenize import word_tokenize
-from nltk.stem import PorterStemmer
-from nltk.stem import WordNetLemmatizer
 import string
-from tokenize import tokenize
-import pandas as pd
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import classification_report
-from sklearn.model_selection import train_test_split
-from tqdm import tqdm
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import accuracy_score
-from transformers import RobertaForSequenceClassification
+from pathlib import Path
 
-from evaluate import generate_classification_report
-from features import check_claim_verbs, extract_dependency_features_for_corpus, extract_ngram_features_for_corpus, \
-    extract_topic_features
+from nltk.corpus import stopwords
+from nltk.stem import WordNetLemmatizer
+from nltk.tokenize import word_tokenize
 
 ROOT = Path(__file__).parent.resolve()
 CORPUS = Path(f"{ROOT}/corpus/")
@@ -44,7 +16,6 @@ SEMANTIC_TYPES = Path(f"{ROOT}/essays_semantic_types.tsv")
 ALL_ANNOTATIONS = Path(f"{ROOT}/all_sorted_annotated_texts.txt")
 
 import pandas as pd
-
 
 
 def locate_text_span(directory, filename, start_index, end_index):
@@ -185,7 +156,7 @@ def get_labelled_sentences_from_data(articles_dataframe, claims_n_premises_dataf
 
         # Store the remaining unlabelled fragment, if any
         if end_index < len(article_text):
-            unlabelled_fragment = article_text[end_index:].strip()  # Strip whitespace
+            unlabelled_fragment = article_text[end_index:].strip()
             # Check if the unlabelled fragment is not empty
             if unlabelled_fragment:
                 if preprocess:

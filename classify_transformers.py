@@ -3,12 +3,20 @@ from sklearn.metrics import accuracy_score
 from transformers import RobertaForSequenceClassification, Trainer, TrainingArguments
 from transformers import RobertaTokenizer
 
-from classify_rfc import load_data, reformat_corpus, get_texts_and_labels, split_data
+from classify_rfc import reformat_corpus, get_texts_and_labels, split_data
 from evaluate import generate_classification_report
 from preprocess import CORPUS, SEMANTIC_TYPES, ALL_ANNOTATIONS, ALL_ARTICLES
 
 
 class CustomDataCollator(torch.utils.data.DataLoader):
+    """
+    A custom data collator for preparing batches of input features.
+    Args:
+    tokenizer (tokenizer): The tokenizer to be used for tokenization.
+    Methods:
+    __call__(self, features): Collates a batch of input features into a dictionary containing 'input_ids',
+        'attention_mask', and 'labels' tensors.
+    """
     def __init__(self, tokenizer):
         self.tokenizer = tokenizer
 
@@ -26,33 +34,39 @@ class CustomDataCollator(torch.utils.data.DataLoader):
 
 
 class InputFeatures:
+    """
+    A class representing input features for a model.
+    Args:
+    input_ids (tensor): The input token IDs.
+    attention_mask (tensor): The attention mask.
+    label (int): The label for the input.
+    Attributes:
+    input_ids (tensor): The input token IDs.
+    attention_mask (tensor): The attention mask.
+    label (int): The label for the input.
+    """
     def __init__(self, input_ids, attention_mask, label):
         self.input_ids = input_ids
         self.attention_mask = attention_mask
         self.label = label
 
 
-def recover_data():
-    X_train = load_data('X_train.pkl')
-    print('Items in X_train:', len(X_train))
-    y_train = load_data('y_train.pkl')
-    print('Items in y_train:', len(y_train))
-    X_dev = load_data('X_dev.pkl')
-    print('Items in X_dev:', len(X_dev))
-    y_dev = load_data('y_dev.pkl')
-    print('Items in y_dev:', len(y_dev))
-    X_test = load_data('X_test.pkl')
-    print('Items in X_test:', len(X_test))
-    y_test = load_data('y_test.pkl')
-    print('Items in y_test:', len(y_test))
-    unique_labels = load_data('unique_labels.pkl')
-    print(f'There are {len(unique_labels)} unique labels')
-    print('The unique labels are:', unique_labels)
-
-    return X_train, y_train, X_dev, y_dev, X_test, y_test, unique_labels
-
-
 def prepare_datasets(X_train, y_train, X_val, y_val, labels):
+    """
+    Prepares datasets as tensors for training and validation.
+    Args:
+    X_train (list): List of training data.
+    y_train (list): List of training labels.
+    X_val (list): List of validation data.
+    y_val (list): List of validation labels.
+    labels (list): List of unique labels.
+    Returns:
+    - train_dataset (torch.utils.data.TensorDataset): Dataset for training.
+    - val_dataset (torch.utils.data.TensorDataset): Dataset for validation.
+    - tokenizer (tokenizer): The tokenizer used for tokenization.
+    - label_map (dict): A dictionary mapping labels to numeric values.
+    """
+
     print('Preparing datasets as tensors...')
     label_map = {label: i for i, label in enumerate(labels)}
 
@@ -89,6 +103,8 @@ def prepare_datasets(X_train, y_train, X_val, y_val, labels):
 
 
 def train_model(model, train_dataset, val_dataset, training_args):
+    """Train and RoBERTa model and return it"""
+
     data_collator = CustomDataCollator(tokenizer)
     trainer = Trainer(
         model=model,
@@ -102,6 +118,11 @@ def train_model(model, train_dataset, val_dataset, training_args):
 
 
 def evaluate_model(trainer, val_dataset, all_labels, label_map):
+    """
+    Evaluate the trained model by making predictions on the validating set
+    and computing accuracy score.
+    """
+
     all_labels = list(all_labels)
     print("Type of trainer:", type(trainer))
     print("Type of val_dataset:", type(val_dataset))
@@ -125,6 +146,7 @@ def evaluate_model(trainer, val_dataset, all_labels, label_map):
 
 
 def train_and_evaluate(all_labels, train_dataset, val_dataset, label_map):
+    """Train, evaluate and generate classification report."""
     model = RobertaForSequenceClassification.from_pretrained("roberta-base", num_labels=len(all_labels))
 
     training_args = TrainingArguments(
@@ -146,8 +168,7 @@ def train_and_evaluate(all_labels, train_dataset, val_dataset, label_map):
     unique_labels = set(actual_labels)
     num_classes = len(unique_labels)
 
-    print("Accuracy:", accuracy)  # For the first 100 Accuracy: 0.65 no features
-    # 1000 acc 0.695
+    print("Accuracy:", accuracy)
 
     if len(unique_labels) != num_classes:
         print("Number of unique labels:", len(unique_labels))
@@ -163,8 +184,6 @@ def train_and_evaluate(all_labels, train_dataset, val_dataset, label_map):
 
 
 if __name__ == "__main__":
-    # Get data generated previously to spare computing effort
-    # X_train, y_train, X_dev, y_dev, X_test, y_test, all_labels = recover_data()
     # Reformat corpus
     articles_df, claims_n_premises_df = reformat_corpus(
         directory=CORPUS, annotations_file=SEMANTIC_TYPES,
@@ -175,25 +194,21 @@ if __name__ == "__main__":
     texts, labels, unique_labels = get_texts_and_labels(
         articles_df,
         claims_n_premises_df,
-        preprocess=False  # NO PREPROCESS IF WE SAVE DATA FOR ROBERTA!!
+        preprocess=False  # No preprocess at this step because we'll use roberta tokenizer
     )
 
     # Split the data
     X_train, X_dev, X_test, y_train, y_dev, y_test = split_data(texts, labels)  # 10056, 1257, 1257
 
-    # X_train = X_train[:100]
-    # y_train = y_train[:100]
-    # X_dev = X_dev[:10]
-    # y_dev = y_dev[:10]
-
     # DEV SET
-    # print('DEVELOPMENT SET RESULTS')
-    # print('_______________________')
-    # train_dataset, val_dataset, tokenizer, label_map = prepare_datasets(X_train, y_train, X_dev, y_dev, unique_labels)
-    # train_and_evaluate(unique_labels, train_dataset, val_dataset, label_map)
+    print('DEVELOPMENT SET RESULTS')
+    print('_______________________')
+    train_dataset, val_dataset, tokenizer, label_map = prepare_datasets(X_train, y_train, X_dev, y_dev, unique_labels)
+    train_and_evaluate(unique_labels, train_dataset, val_dataset, label_map)
 
     # TEST SET
     print('TEST SET RESULTS')
     print('_______________________')
-    train_dataset, test_dataset, tokenizer, label_map = prepare_datasets(X_train, y_train, X_test, y_test, unique_labels)
+    train_dataset, test_dataset, tokenizer, label_map = prepare_datasets(X_train, y_train, X_test, y_test,
+                                                                         unique_labels)
     train_and_evaluate(unique_labels, train_dataset, test_dataset, label_map)
