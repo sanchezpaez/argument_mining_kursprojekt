@@ -27,7 +27,7 @@ The directory contains:
 * `README.md`(this file)
 * `.gitignore`
 * `requirements.txt`
-* corpus(directory with article files):
+* corpus(directory with article files)
 
 
 -------

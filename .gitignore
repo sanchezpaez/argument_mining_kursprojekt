@@ -7,12 +7,13 @@
 
 __pycache__/
 
-X_dev_vectorized.csv
-X_test_vectorized.csv
-X_train_vectorized.csv
-y_dev.csv
-y_test.csv
-y_train.csv
+all_articles.txt
+all_sorted_annotated_texts.txt
+labels.pkl
+unique_labels.pkl
+texts.pkl
+X_test.pkl
+y_test.pkl
 X_train.pkl
 X_dev.pkl
 y_train.pkl
@@ -23,7 +24,7 @@ X_dev_matrix.pkl
 y_dev_matrix.pkl
 X_test_matrix.pkl
 y_test_matrix.pkl
-experiments.py
+
 
 preprocessed_texts.pkl
 tokenized_data.tsv
