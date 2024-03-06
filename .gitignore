@@ -29,6 +29,7 @@ preprocessed_texts.pkl
 tokenized_data.tsv
 tokenized_data.pkl
 accelerate/
+roberta_sequence_classification_model/
 check_dependencies.py
 roberta_sequence_classification_model
 results/
@@ -36,5 +37,11 @@ results/
 env/
 accuracy_test_rfc.pkl
 accuracy_dev_rfc.pkl
+accuracy_dev_rfc_features.pkl
+accuracy_dev_rfc_no_features.pkl
+accuracy_test_rfc_no_features.pkl
 classification_report_test_rfc.pkl
 classification_report_dev_rfc.pkl
+
+precision_dev.csv
+recall_dev.csv

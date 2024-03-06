@@ -402,10 +402,11 @@ def fit_classify_evaluate(dataset):
         print("Test Set")
         accuracy_score, classification_report = evaluate_baseline(y_test, y_test_pred, label_map)
         save_data(accuracy_score, 'accuracy_test_rfc.pkl')
-        save_data(classification_report, 'classification_report_test_rfc.pkl')
+        save_data(classification_report, 'classification_report_test_rfc_features.pkl')
 
 
 if __name__ == '__main__':
+    # First run classify_transformers.py !!!
     # Recover reformatted, splitted corpus from transformers
     print('REFORMAT AND PREPROCESS')
     print('_______________________')
