@@ -235,5 +235,6 @@ def preprocess_texts_and_labels(X_set, y_set):
 
     print('Number of preprocessed texts:', len(texts))
     print('Number of preprocessed labels:', len(labels))
+    print('')
 
     return texts, labels

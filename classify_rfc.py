@@ -59,24 +59,20 @@ def split_data(texts, labels, dev_size=0.1, test_size=0.1, random_state=42):
 
 
 def encode_data(y_train, y_dev, y_test):
-    # # Encode labels for multilabel classification
-    # mlb = MultiLabelBinarizer()
-    # encoded_labels_train = mlb.fit_transform(y_train)
-    # encoded_labels_dev = mlb.transform(y_dev)
-    # encoded_labels_test = mlb.transform(y_test)
-    # # print(mlb.classes_)
-    #
-    # return encoded_labels_train, encoded_labels_dev, encoded_labels_test, mlb
     # Encode labels for multiclass classification
     label_encoder = LabelEncoder()
     encoded_labels_train = label_encoder.fit_transform(y_train)
     encoded_labels_dev = label_encoder.transform(y_dev)
     encoded_labels_test = label_encoder.transform(y_test)
 
-    # Optionally, you can also get the classes if needed
     classes = label_encoder.classes_
 
-    return encoded_labels_train, encoded_labels_dev, encoded_labels_test, classes
+    # Print label mappings for verification
+    label_map = dict(zip(label_encoder.classes_, label_encoder.transform(label_encoder.classes_)))
+    print("Label Mapping:")
+    print(label_map)
+
+    return encoded_labels_train, encoded_labels_dev, encoded_labels_test, label_map
 
 
 def create_term_document_matrix(X_train, y_train, X_dev, y_dev, include_additional_features=False):
@@ -84,7 +80,6 @@ def create_term_document_matrix(X_train, y_train, X_dev, y_dev, include_addition
 
     # Fit the vectorizer to the training data and transform the data
     term_doc_matrix_train = vectorizer.fit_transform(X_train)
-    # print(term_doc_matrix_train)
     term_doc_matrix_dev = vectorizer.transform(X_dev)
 
     # Convert labels to numpy arrays
@@ -245,17 +240,14 @@ def train_baseline(X_train_term_doc_matrix, y_train, X_dev_term_doc_matrix):
     classifier = RandomForestClassifier()
     # Train the classifier
     classifier.fit(X_train_term_doc_matrix, y_train)
-    print("Shape of X_train_term_doc_matrix:", X_train_term_doc_matrix.shape)
-    print("Shape of y_train:", y_train.shape)
 
     # Predict on the development set
     y_dev_pred = classifier.predict(X_dev_term_doc_matrix)
-    print("Shape of X_dev_term_doc_matrix:", X_dev_term_doc_matrix.shape)
 
     return y_dev_pred
 
 
-def evaluate_baseline(y_val, y_val_predictions, all_labels):
+def evaluate_baseline(y_val, y_val_predictions, labelmap):
     accuracy = accuracy_score(y_val, y_val_predictions)
     print("Accuracy score:", accuracy)
 
@@ -265,7 +257,7 @@ def evaluate_baseline(y_val, y_val_predictions, all_labels):
     # yes preprocess no features: 0.3779608650875386 dev set
     # yes preprocess yes features: 0.3367662203913491 dev set
 
-    report = generate_classification_report(y_val, y_val_predictions, all_labels)
+    report = generate_classification_report(y_val, y_val_predictions, labelmap)
 
     return accuracy, report
 
@@ -273,6 +265,9 @@ def evaluate_baseline(y_val, y_val_predictions, all_labels):
 def fit_classify_evaluate(dataset):
     if dataset == 'dev':
         # Fit data/Extract features
+
+        # Load matrices if they were already created, otherwise create
+        # X_train_term_doc_matrix, y_train, X_dev_term_doc_matrix, y_dev = load_matrices()
         X_train_term_doc_matrix, y_train, X_dev_term_doc_matrix, y_dev = create_term_document_matrix(
             X_train_preprocessed,
             encoded_y_train,
@@ -281,18 +276,13 @@ def fit_classify_evaluate(dataset):
             include_additional_features=True
         )
         save_matrices(X_train_term_doc_matrix, y_train, X_dev_term_doc_matrix, y_dev)
-        print('Number of items in y_sets')
-        print(len(y_train))
-        print(len(y_dev))
-
-        # X_train_term_doc_matrix, y_train, X_dev_term_doc_matrix, y_dev = load_matrices()
 
         # Train & Classify
         y_dev_pred = train_baseline(X_train_term_doc_matrix, y_train, X_dev_term_doc_matrix)
 
         # Evaluate the classifier
         print("Development Set")
-        accuracy_score, classification_report = evaluate_baseline(y_dev, y_dev_pred, unique_labels)
+        accuracy_score, classification_report = evaluate_baseline(y_dev, y_dev_pred, label_map)
         save_data(accuracy_score, 'accuracy_dev_rfc.pkl')
         save_data(classification_report, 'classification_report_dev_rfc.pkl')
 
@@ -313,27 +303,15 @@ def fit_classify_evaluate(dataset):
 
         # Evaluate the classifier
         print("Test Set")
-        accuracy_score, classification_report = evaluate_baseline(y_test, y_test_pred, unique_labels)
+        accuracy_score, classification_report = evaluate_baseline(y_test, y_test_pred, label_map)
         save_data(accuracy_score, 'accuracy_test_rfc.pkl')
         save_data(classification_report, 'classification_report_test_rfc.pkl')
 
 
 if __name__ == '__main__':
-    # # Reformat corpus
-    # articles_df, claims_n_premises_df = reformat_corpus(
-    #     directory=CORPUS, annotations_file=SEMANTIC_TYPES,
-    #     annotated_texts_file=ALL_ANNOTATIONS, article_file=ALL_ARTICLES
-    # )
-    #
-    # # Get and preprocess labelled texts
-    # texts, labels, unique_labels = get_texts_and_labels(
-    #     articles_df,
-    #     claims_n_premises_df,
-    #     preprocess=False # NO PREPROCESS IF WE SAVE DATA FOR ROBERTA!!
-    # )
-    #
-    # # Encode and split the data
-    # X_train, X_dev, X_test, y_train, y_dev, y_test = split_data(texts, labels)
+    # Recover reformatted, splitted corpus from transformers
+    print('REFORMAT AND PREPROCESS')
+    print('')
     # Load data
     X_train = load_data('X_train.pkl')
     y_train = load_data('y_train.pkl')
@@ -348,7 +326,6 @@ if __name__ == '__main__':
     print('Number of items in y_dev:', len(y_dev))  # 1257, 958
     print('Number of items in X_test:', len(X_test))  # 1257, 967
     print('Number of items in y_test:', len(y_test))  # 1257, 967
-
     print('')
     print('TRAINING SET')
     X_train_preprocessed, y_train_preprocessed = preprocess_texts_and_labels(X_train, y_train)
@@ -357,9 +334,8 @@ if __name__ == '__main__':
     print('TEST SET')
     X_test_preprocessed, y_test_preprocessed = preprocess_texts_and_labels(X_test, y_test)
 
-    # Preprocess?
-    encoded_y_train, encoded_y_dev, encoded_y_test, classes = encode_data(y_train_preprocessed, y_dev_preprocessed, y_test_preprocessed)
-
+    # ENCODE
+    encoded_y_train, encoded_y_dev, encoded_y_test, label_map = encode_data(y_train_preprocessed, y_dev_preprocessed, y_test_preprocessed)
     # Fit data/Extract features, Train & Classify, Evaluate
     #
     # DEV SET
