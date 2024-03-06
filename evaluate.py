@@ -3,6 +3,7 @@ from sklearn.metrics import classification_report
 
 
 def generate_classification_report(actual_labels_numeric, predicted_labels_numeric, all_labels):
+    """Generate and print classification report"""
     class_names = all_labels
     print("Classification Report:")
     report = classification_report(actual_labels_numeric, predicted_labels_numeric,

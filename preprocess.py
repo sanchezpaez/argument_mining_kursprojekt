@@ -19,6 +19,17 @@ import pandas as pd
 
 
 def locate_text_span(directory, filename, start_index, end_index):
+    """
+    Locate and extract a text span from a file.
+    Args:
+    directory (str): The directory path where the file is located.
+    filename (str): The name of the file to search within.
+    start_index (int): The starting index of the text span.
+    end_index (int): The ending index of the text span.
+    Returns:
+    str: The extracted text span from the specified file.
+    Returns None if the directory or file does not exist.
+    """
     # Check if the directory exists
     if not os.path.isdir(directory):
         print(f"Directory '{directory}' does not exist.")
@@ -38,6 +49,14 @@ def locate_text_span(directory, filename, start_index, end_index):
 
 
 def process_annotations(tsv_file, output_file, directory):
+    """
+    Process annotations from a (TSV) file and extract corresponding text spans from files.
+    Args:
+    tsv_file (str): The path to the TSV file containing annotations.
+    output_file (str): The path to the output file where processed annotations will be saved.
+    directory (str): The directory path where the files referenced in annotations are located.
+    Returns: None
+    """
     # Check if the directory exists
     if not os.path.isdir(directory):
         print(f"Directory '{directory}' does not exist.")
@@ -74,6 +93,12 @@ def process_annotations(tsv_file, output_file, directory):
 
 
 def merge_txt_files(directory):
+    """
+    Merge text files (articles) from a directory (corpus) into a single file.
+    Args:
+    directory (str): The path to the directory containing text files to merge.
+    Returns: None
+    """
     output_file = ALL_ARTICLES
 
     # Get a sorted list of filenames in the directory
@@ -92,6 +117,15 @@ def merge_txt_files(directory):
 
 
 def transform_files_to_dataframes(articles_file, annotations_file):
+    """
+    Transform text files into pandas DataFrames.
+    Args:
+    articles_file (str): Path to the file containing articles.
+    annotations_file (str): Path to the file containing annotations.
+    Returns:
+    Two DataFrames, the first containing articles and the second containing claims and premises.
+    """
+
     # Get text of all articles
     # Convert the data into a DataFrame
     articles_dataframe = pd.read_csv(articles_file, sep="\t", header=None, names=['id', 'text'])
@@ -103,6 +137,15 @@ def transform_files_to_dataframes(articles_file, annotations_file):
 
 
 def get_labelled_sentences_from_data(articles_dataframe, claims_n_premises_dataframe, preprocess=False):
+    """
+    Extract labelled sentences from articles and claims dataFrames.
+    Args:
+    articles_dataframe (pd.DataFrame): DataFrame containing articles.
+    claims_n_premises_dataframe (pd.DataFrame): DataFrame containing claims and premises.
+    preprocess (bool, optional): Flag indicating whether to preprocess text. Defaults to False.
+    Returns:
+    Two lists, the first containing texts and the second containing labels.
+    """
     # Create empty lists to store texts and labels
     texts = []
     labels = []
@@ -172,6 +215,14 @@ def get_labelled_sentences_from_data(articles_dataframe, claims_n_premises_dataf
 
 
 def preprocess_text(text):
+    """
+    Preprocess input text by tokenizing, removing punctuation,
+    lowercase, removing stopwords, and lemmatizing.
+    Args:
+    text (str): Input text to be preprocessed.
+    Returns:
+    str: Preprocessed text.
+    """
     # Tokenize the text
     tokens = word_tokenize(text)
 
@@ -196,6 +247,7 @@ def preprocess_text(text):
 
 
 def preprocess_texts_and_labels(X_set, y_set):
+    """Preprocess all texts and labels and filter empty ones out."""
     texts = []
     labels = []
     for text, label in zip(X_set, y_set):
